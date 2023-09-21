@@ -64,7 +64,6 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
   }
 
   drawSegment(CanvasRenderingContext2D ctx, PieChartItem item, double start, double total) {
-    print('DRAW SEGMENT');
     ctx.save();
     var centerX = (canvas.width! / 2).floor();
     var centerY = (canvas.height! / 2).floor();
@@ -79,8 +78,6 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
     ctx.arc(centerX, centerY, radius,
     startingAngle, endingAngle, false);
     ctx.closePath();
-
-    print([centerX, centerY, radius, startingAngle, endingAngle, false]);
 
     ctx.fillStyle = item.color;
     ctx.fill();

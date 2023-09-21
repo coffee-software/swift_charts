@@ -23,10 +23,10 @@ abstract class SwiftChart<T> {
   }
 
   CanvasRenderingContext2D startRender() {
-    this.canvas.width  = this.canvas.offsetWidth;
-    this.canvas.height = this.canvas.offsetHeight;
-    CanvasRenderingContext2D ctx = this.canvas.getContext('2d') as CanvasRenderingContext2D;
-    ctx.clearRect(0, 0, this.canvas.width!, this.canvas.height!);
+    canvas.width  = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+    CanvasRenderingContext2D ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
+    ctx.clearRect(0, 0, canvas.width!, canvas.height!);
     return ctx;
   }
 

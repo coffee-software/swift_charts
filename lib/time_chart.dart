@@ -116,8 +116,10 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
   }
 
   render() {
-
+    print('RENDER');
     var ctx = this.startRender();
+    print(canvas.width!);
+    print(canvas.height!);
     ctx.fillStyle = 'black';
     ctx.font = '8pt Arial';
 
