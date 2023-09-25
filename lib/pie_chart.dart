@@ -16,10 +16,13 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
   List<PieChartItem> items = [];
   CanvasElement canvas;
-  SwiftPieChart(this.canvas) {
-    canvas.width = 100;
-    canvas.height = 100;
-    canvas.style.width ='100%';
+  DivElement container;
+
+  SwiftPieChart(this.container) :
+        canvas = new CanvasElement()
+  {
+    container.append(canvas);
+    canvas.style.width='100%';
     canvas.style.height='200px';
     renderText('rendering...');
   }
@@ -65,10 +68,10 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
   drawSegment(CanvasRenderingContext2D ctx, PieChartItem item, double start, double total) {
     ctx.save();
-    var centerX = (canvas.width! / 2).floor();
-    var centerY = (canvas.height! / 2).floor();
-    var radius = (min(canvas.width!, canvas.height!) / 2) * 0.8;
+    var centerX = (width / 2).floor();
+    var centerY = (height / 2).floor();
 
+    var radius = (min(width, height) / 2) * 0.8;
     var startingAngle = degreesToRadians((start / total) * 360 - 90.0);
     var arcSize = degreesToRadians((item.weight / total) * 360);
     var endingAngle = startingAngle + arcSize;
@@ -92,17 +95,17 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
   drawSegmentLabel(CanvasRenderingContext2D ctx, PieChartItem item, double start, double total) {
     ctx.save();
-    var x = (canvas.width! / 2).floor();
-    var y = (canvas.height! / 2).floor();
+    var x = (width / 2).floor();
+    var y = (height / 2).floor();
     var angle = this.degreesToRadians((start / total) * 360 - 90);
 
     ctx.translate(x, y);
     ctx.rotate(angle);
-    var dx = (min(canvas.width!, canvas.height!) * 0.5).floor() * 0.8 - 10;
-    var dy = (canvas.height! * 0.05).floor();
+    var dx = (min(width, height) * 0.5).floor() * 0.8 - 10;
+    var dy = (height * 0.05).floor();
 
     ctx.textAlign = "right";
-    int fontSize = (canvas.height! / 25).floor();
+    int fontSize = (height / 25).floor();
     ctx.font = fontSize.toString() + "pt Helvetica";
 
     ctx.fillText(item.label, dx, dy);

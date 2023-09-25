@@ -15,18 +15,21 @@ abstract class SwiftChart<T> {
 
   render();
 
+  int get width => canvas.clientWidth;
+  int get height => canvas.clientHeight;
+
   renderText(String text) {
     var ctx = startRender();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText(text, canvas.width! / 2, canvas.height! / 2);
+    ctx.fillText(text, width / 2, height / 2);
   }
 
   CanvasRenderingContext2D startRender() {
-    canvas.width  = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
     CanvasRenderingContext2D ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
-    ctx.clearRect(0, 0, canvas.width!, canvas.height!);
+    ctx.canvas.width = width;
+    ctx.canvas.height = height;
+    ctx.clearRect(0, 0, width, height);
     return ctx;
   }
 
