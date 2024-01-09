@@ -129,16 +129,16 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
       formatter = (DateTime date) => days[date.weekday - 1] + ' ' + date.day.toString();
     } else if (hoursDiff < (24 * 100)) {
       step = hour * 24 * 5;
-      formatter = (DateTime date) => months[date.month] + ' ' + date.day.toString();
+      formatter = (DateTime date) => months[date.month - 1] + ' ' + date.day.toString();
     } else {
       step = hour * 24;
       allowedMonthDays = [1];
       if (hoursDiff < (24 * 600)) {
         allowedMonths = [0, 2, 4, 6, 8, 10];
-        formatter = (DateTime date) => months[date.month];
+        formatter = (DateTime date) => months[date.month - 1];
       } else if (hoursDiff < (24 * 1000)) {
         allowedMonths = [0, 6];
-        formatter = (DateTime date) => months[date.month] + ' ' + date.year.toString();
+        formatter = (DateTime date) => months[date.month - 1] + ' ' + date.year.toString();
       } else {
         allowedMonths = [0];
         formatter = (DateTime date) => date.year.toString();
