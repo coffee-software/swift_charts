@@ -218,9 +218,19 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
       maxValue = (maxValue == null ? value : max(maxValue, value));
     }
 
-    if (maxTime == null || maxTime! - minTime! == 0) {
+    if (maxTime == null) {
       renderText('no data');
       return;
+    }
+
+    if (maxTime == minTime) {
+      minTime = minTime! - 100;
+      maxTime = maxTime! + 100;
+    }
+
+    if (minValue! > 0) {
+      //TODO configurable start at 0
+      minValue = 0;
     }
 
     magnitude = getMagnitude(maxValue!);
