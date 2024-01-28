@@ -1,10 +1,10 @@
 name: swift_charts
 description: Simple charts using dart:html and canvas.
-version: 1.0.0
+version: 1.1.0
 homepage: https://github.com/fsw/swift_charts
 environment:
   sdk: ">=2.12.0 <4.0.0"
 dev_dependencies:
   test: any
-  build_runner: ^2.3.0
-  build_web_compilers: ^3.2.0
+  build_runner: ^2.4.8
+  build_web_compilers: ^4.0.9

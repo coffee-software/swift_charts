@@ -19,12 +19,12 @@ void main() {
   List<SwiftChart> charts = [];
 
   charts.add(
-      SwiftTimeChart(document.getElementById('timechart1') as CanvasElement)
+      SwiftTimeChart(document.getElementById('timechart1') as DivElement)
         ..setData(dataPoints)
   );
 
   charts.add(
-      SwiftTimeChart(document.getElementById('timechart2') as CanvasElement)
+      SwiftTimeChart(document.getElementById('timechart2') as DivElement)
         ..setLineColor('blue')
         ..setLineWidth(3)
         ..setPointSize(8)
@@ -32,13 +32,13 @@ void main() {
   );
 
   charts.add(
-      SwiftTimeChart(document.getElementById('timechart3') as CanvasElement)
+      SwiftTimeChart(document.getElementById('timechart3') as DivElement)
         ..setLineColor('red')
         ..setData(dataPoints.map((key, value) => MapEntry((key / 5).round(), 2 * value)))
   );
 
   charts.add(
-      SwiftPieChart(document.getElementById('piechart1') as CanvasElement)
+      SwiftPieChart(document.getElementById('piechart1') as DivElement)
         ..setData([
           PieChartItem('w 12', 12, color: 'red'),
           PieChartItem('w 24', 24, color: 'green'),
@@ -48,7 +48,7 @@ void main() {
   );
 
   charts.add(
-      SwiftPieChart(document.getElementById('piechart2') as CanvasElement)
+      SwiftPieChart(document.getElementById('piechart2') as DivElement)
         ..setData([
           PieChartItem('20 %', 20),
           PieChartItem('25 %', 25),

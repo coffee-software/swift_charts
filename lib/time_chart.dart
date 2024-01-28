@@ -235,7 +235,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
 
     magnitude = getMagnitude(maxValue!);
     maxValue = ((maxValue / magnitude) * magnitude).ceilToDouble();
-    minValue = ((minValue! / magnitude) * magnitude).floorToDouble();
+    minValue = ((minValue / magnitude) * magnitude).floorToDouble();
 
     valueLabels = getValueLabels(minValue, maxValue);
 
