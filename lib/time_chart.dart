@@ -232,6 +232,9 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
       //TODO configurable start at 0
       minValue = 0;
     }
+    if (minValue == maxValue) {
+      maxValue = maxValue! + 1;
+    }
 
     magnitude = getMagnitude(maxValue!);
     maxValue = ((maxValue / magnitude) * magnitude).ceilToDouble();
