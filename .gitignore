@@ -14,3 +14,5 @@ pubspec.lock
 doc/api/
 
 .idea/
+
+pubspec_overrides.yaml
