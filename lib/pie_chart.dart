@@ -10,7 +10,7 @@ class PieChartItem {
   String? color;
   bool isActive = false;
   static int maxLabelLength = 14;
-  String? othersText = null;
+  String? description = null;
 
   PieChartItem(this.label, this.weight, {this.color}):
     shortLabel = (label.length > maxLabelLength) ? label.substring(0, maxLabelLength - 2) + '..' : label {
@@ -38,7 +38,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
       var leftWeight = lefts.map((i) => i.weight).reduce((a, b) => a + b);
       items.add(
           PieChartItem('other..', leftWeight)
-            ..othersText = lefts.map((i) => (100 * i.weight / totalWeight).toStringAsFixed(2) + '% ' + i.label).join('<br/>')
+            ..description = lefts.map((i) => (100 * i.weight / totalWeight).toStringAsFixed(2) + '% ' + i.label).join('<br/>')
       );
     }
     var c = 0;
@@ -150,7 +150,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
         item.isActive = false;
       }
     }
-    canvasTip.innerHtml = '<strong>' + (currentItem?.label ?? '') + '</strong><br/>' + (currentItem?.othersText ?? ((currentItem?.weight ?? 0) * 100 / totalWeight).toStringAsFixed(2) + '%');
+    canvasTip.innerHtml = '<strong>' + (currentItem?.label ?? '') + '</strong><br/>' + (currentItem?.description ?? ((currentItem?.weight ?? 0) * 100 / totalWeight).toStringAsFixed(2) + '%');
     canvasTip.style.display = currentItem != null ? 'block' : 'none';
 
     canvasTip.style.right = (x < width / 2) ? '0' : 'auto';
