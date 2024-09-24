@@ -325,7 +325,10 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
         ctx.moveTo(points[i].x, points[i].y);
         first = false;
       } else {
-        ctx.lineTo(points[i].x, points[i].y);
+        Point cp1 = Point((points[i - 1].x + points[i].x) / 2, points[i - 1].y);
+        Point cp2 = Point((points[i - 1].x + points[i].x) / 2, points[i].y);
+        ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, points[i].x, points[i].y);
+        //ctx.lineTo(points[i].x, points[i].y);
       }
     }
     ctx.stroke();
