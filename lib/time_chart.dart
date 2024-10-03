@@ -32,7 +32,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
         canvasTip = new DivElement()
   {
     canvas.style.width='100%';
-    canvas.style.height='200px';
+    canvas.style.height='280px';
     renderText('rendering...');
     canvas.onMouseMove.listen(handleMouseMove);
     container.style.position = 'relative';
