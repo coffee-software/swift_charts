@@ -60,6 +60,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
         canvas = new CanvasElement(),
         canvasTip = new DivElement()
   {
+    container.innerHtml = '';
     container.append(canvas);
     canvas.style.width='100%';
     canvas.style.height='280px';

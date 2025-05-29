@@ -5,12 +5,13 @@ import 'package:swift_charts/swift_charts.dart';
 
 
 class TimeChartPoint {
+  int key;
   int x;
   int y;
   String time;
   String value;
   bool active = false;
-  TimeChartPoint(this.x, this.y, this.time, this.value);
+  TimeChartPoint(this.key, this.x, this.y, this.time, this.value);
 }
 
 typedef TimeChartValueFormatter = String Function(double value);
@@ -35,6 +36,8 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
     canvas.style.height='280px';
     renderText('rendering...');
     canvas.onMouseMove.listen(handleMouseMove);
+
+    container.innerHtml = '';
     container.style.position = 'relative';
     container.append(canvas);
     container.append(canvasTip);
@@ -59,6 +62,14 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
       return valueFormatter!(value);
     }
     return value.toStringAsFixed(max(0, (- ((log(magnitude) / ln10) - 1)).round()));
+  }
+
+  void onPointClick(void callback(int id)) {
+    canvas.onClick.listen((e){
+      if (currentActivePoint != null) {
+        callback(points[currentActivePoint!].key);
+      }
+    });
   }
 
   void handleMouseMove(MouseEvent event){
@@ -91,6 +102,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
       }
     }
     if (currentActivePoint != activePoint) {
+      currentActivePoint = activePoint;
       renderPoints();
     }
   }
@@ -260,6 +272,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
       var date = new DateTime.fromMillisecondsSinceEpoch(time).toUtc();
       points.add(
           TimeChartPoint(
+              key,
               (((time - minTime!) / (maxTime! - minTime!)) * (width - valueMargin - smallMargin) + valueMargin).round(),
               (height - (((value - minValue) / (maxValue - minValue)) * (height - timeMargin - smallMargin)) - timeMargin).round(),
               date.year.toString() + '-' + forceTwoDigits(date.month) + '-' + forceTwoDigits(date.day) + ' '
