@@ -14,14 +14,15 @@ class TimeChartPoint {
   TimeChartPoint(this.key, this.x, this.y, this.time, this.value);
 }
 
-typedef TimeChartValueFormatter = String Function(double value);
+typedef TimeChartValueFormatter = String Function(num value);
+typedef TimeChartDateFormatter = String Function(DateTime date);
 
 /**
  * Chart that renders datapoints indexed by milisecondsSinceEpoch
  */
-class SwiftTimeChart extends SwiftChart<Map<int,double>> {
+class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
-  Map<int,double> items = {};
+  Map<int,num> items = {};
   List<TimeChartPoint> points = [];
   DivElement canvasTip;
 
@@ -57,11 +58,21 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
 
   TimeChartValueFormatter? valueFormatter = null;
 
-  String formatValue(double value) {
+  String formatValue(num value) {
     if (valueFormatter != null) {
       return valueFormatter!(value);
     }
     return value.toStringAsFixed(max(0, (- ((log(magnitude) / ln10) - 1)).round()));
+  }
+
+  TimeChartDateFormatter? dateFormatter = null;
+
+  String formatTime(DateTime date) {
+    if (dateFormatter != null) {
+      return dateFormatter!(date);
+    }
+    return date.year.toString() + '-' + forceTwoDigits(date.month) + '-' + forceTwoDigits(date.day) + ' '
+        + forceTwoDigits(date.hour) + ':' + forceTwoDigits(date.minute);
   }
 
   void onPointClick(void callback(int id)) {
@@ -107,7 +118,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
     }
   }
 
-  List<double> getValueLabels(double minValue, double maxValue) {
+  List<double> getValueLabels(num minValue, num maxValue) {
     List<double> ret = [];
     for (var i = 0; i < this.valueStepsCount; i++) {
       var valueStep = maxValue - (((maxValue - minValue) * i) / (this.valueStepsCount - 1));
@@ -173,7 +184,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
     return ret;
   }
 
-  static double getMagnitude(double value) {
+  static double getMagnitude(num value) {
     var magnitude = 0.001;
     while (magnitude < value) {
       magnitude *= 10;
@@ -219,8 +230,8 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
 
     minTime = null;
     maxTime = null;
-    double? minValue = null;
-    double? maxValue = null;
+    num? minValue = null;
+    num? maxValue = null;
     for (var key in items.keys) {
       var time = key;
       var value = items[key]!;
@@ -275,8 +286,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,double>> {
               key,
               (((time - minTime!) / (maxTime! - minTime!)) * (width - valueMargin - smallMargin) + valueMargin).round(),
               (height - (((value - minValue) / (maxValue - minValue)) * (height - timeMargin - smallMargin)) - timeMargin).round(),
-              date.year.toString() + '-' + forceTwoDigits(date.month) + '-' + forceTwoDigits(date.day) + ' '
-                  + forceTwoDigits(date.hour) + ':' + forceTwoDigits(date.minute),
+              formatTime(date),
               'value: ' + formatValue(items[key]!)
           )
       );
