@@ -1,3 +1,7 @@
+# 1.2.0
+
+migrate from dart:html to package:web
+
 # 1.1.0
 
 add tooltip to charts
