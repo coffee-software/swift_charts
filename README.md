@@ -1,6 +1,6 @@
 # swift_charts
 
-Simple charts drawing using dart:html and canvas.
+Simple charts drawing using package:web and canvas.
 
 ## supported chart types
 
@@ -14,5 +14,8 @@ Simple Pie Charts
 
 ## usage
 
-See example folder
+Please see example folder. Run below command to see example charts: 
 
+```
+webdev serve example
+```

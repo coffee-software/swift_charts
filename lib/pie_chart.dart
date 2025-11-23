@@ -1,7 +1,8 @@
-import 'dart:html';
+import 'dart:js_interop';
 import 'dart:math';
 
-import 'package:swift_charts/swift_charts.dart';
+import 'swift_charts.dart';
+import 'package:web/web.dart';
 
 class PieChartItem {
   String label;
@@ -22,10 +23,10 @@ class PieChartItem {
 class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
   List<PieChartItem> items = [];
-  CanvasElement canvas;
-  DivElement container;
+  HTMLCanvasElement canvas;
+  HTMLDivElement container;
   bool legend;
-  DivElement canvasTip;
+  HTMLDivElement canvasTip;
 
   static int maxLabels = 14;
 
@@ -58,9 +59,9 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
   SwiftPieChart(this.container, { this.legend = false }) :
         canvas = new CanvasElement(),
-        canvasTip = new DivElement()
+        canvasTip = new HTMLDivElement()
   {
-    container.innerHtml = '';
+    container.innerHTML = ''.toJS;
     container.append(canvas);
     canvas.style.width='100%';
     canvas.style.height='280px';
@@ -151,7 +152,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
         item.isActive = false;
       }
     }
-    canvasTip.innerHtml = '<strong>' + (currentItem?.label ?? '') + '</strong><br/>' + (currentItem?.description ?? ((currentItem?.weight ?? 0) * 100 / totalWeight).toStringAsFixed(2) + '%');
+    canvasTip.innerHTML = ('<strong>' + (currentItem?.label ?? '') + '</strong><br/>' + (currentItem?.description ?? ((currentItem?.weight ?? 0) * 100 / totalWeight).toStringAsFixed(2) + '%')).toJS;
     canvasTip.style.display = currentItem != null ? 'block' : 'none';
 
     canvasTip.style.right = (x < width / 2) ? '0' : 'auto';
@@ -221,7 +222,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
     startingAngle, endingAngle, false);
     ctx.closePath();
 
-    ctx.fillStyle = item.color;
+    ctx.fillStyle = (item.color ?? '').toJS;
     ctx.fill();
     ctx.restore();
 
@@ -248,12 +249,13 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
     ctx.textAlign = "right";
     int fontSize = min(11, (height / 25)).floor();
     ctx.font = (item.isActive ? "bold " : '') + fontSize.toString() + "pt Helvetica";
+    ctx.fillStyle = 'black'.toJS;
 
     ctx.fillText(item.shortLabel, dx, dy);
 
     ctx.restore();
 
-    ctx.fillStyle = item.color;
+    ctx.fillStyle = (item.color ?? '').toJS;
     //ctx.fillRect(width - legendWidth, height - legendHeight, legendWidth, legendHeight);
     //ctx.fillText(item.label, 10, 10);
     int legendSize = 5;
@@ -261,12 +263,12 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
       int x = width - legendWidth + 5;
       int y = height - legendHeight + (idx * 20) + 10;
-      ctx.fillStyle = item.color;
+      ctx.fillStyle = (item.color ?? '').toJS;
       legendSize = item.isActive ? 7 : 5;
       ctx.fillRect(x - legendSize, y - legendSize, 2 * legendSize, 2 * legendSize);
 
       ctx.textAlign = "left";
-      ctx.fillStyle = 'black';
+      ctx.fillStyle = 'black'.toJS;
       ctx.font = (item.isActive ? "bold " : '') + legendFont;
 
       ctx.fillText(legendLabel(item), x + 10, y + 4);

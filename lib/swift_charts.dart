@@ -1,4 +1,4 @@
-import 'dart:html';
+import 'package:web/web.dart';
 
 export 'time_chart.dart';
 export 'pie_chart.dart';

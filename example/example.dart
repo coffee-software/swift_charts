@@ -1,6 +1,6 @@
+import 'dart:js_interop';
 
-import 'dart:html';
-
+import 'package:web/web.dart';
 import 'package:swift_charts/swift_charts.dart';
 
 void main() {
@@ -19,12 +19,12 @@ void main() {
   List<SwiftChart> charts = [];
 
   charts.add(
-      SwiftTimeChart(document.getElementById('timechart1') as DivElement)
+      SwiftTimeChart(document.getElementById('timechart1') as HTMLDivElement)
         ..setData(dataPoints)
   );
 
   charts.add(
-      SwiftTimeChart(document.getElementById('timechart2') as DivElement)
+      SwiftTimeChart(document.getElementById('timechart2') as HTMLDivElement)
         ..setLineColor('blue')
         ..setLineWidth(3)
         ..setPointSize(8)
@@ -32,13 +32,13 @@ void main() {
   );
 
   charts.add(
-      SwiftTimeChart(document.getElementById('timechart3') as DivElement)
+      SwiftTimeChart(document.getElementById('timechart3') as HTMLDivElement)
         ..setLineColor('red')
         ..setData(dataPoints.map((key, value) => MapEntry((key / 5).round(), 2 * value)))
   );
 
   charts.add(
-      SwiftPieChart(document.getElementById('piechart1') as DivElement)
+      SwiftPieChart(document.getElementById('piechart1') as HTMLDivElement)
         ..setData([
           PieChartItem('w 12', 12, color: 'red'),
           PieChartItem('w 24', 24, color: 'green'),
@@ -48,7 +48,7 @@ void main() {
   );
 
   charts.add(
-      SwiftPieChart(document.getElementById('piechart2') as DivElement)
+      SwiftPieChart(document.getElementById('piechart2') as HTMLDivElement)
         ..setData([
           PieChartItem('20 %', 20),
           PieChartItem('25 %', 25),
@@ -60,7 +60,7 @@ void main() {
 
   charts.forEach((element) {element.render();});
 
-  window.onResize.listen((event) {
+  window.addEventListener('resize', () {
     charts.forEach((element) {element.render();});
-  });
+  }.toJS);
 }

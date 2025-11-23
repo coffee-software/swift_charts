@@ -1,8 +1,8 @@
-import 'dart:html';
+import 'dart:js_interop';
 import 'dart:math';
 
-import 'package:swift_charts/swift_charts.dart';
-
+import 'swift_charts.dart';
+import 'package:web/web.dart';
 
 class TimeChartPoint {
   int key;
@@ -24,21 +24,21 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
   Map<int,num> items = {};
   List<TimeChartPoint> points = [];
-  DivElement canvasTip;
+  HTMLDivElement canvasTip;
 
-  DivElement container;
+  HTMLDivElement container;
   CanvasElement canvas;
 
   SwiftTimeChart(this.container) :
         canvas = new CanvasElement(),
-        canvasTip = new DivElement()
+        canvasTip = new HTMLDivElement()
   {
     canvas.style.width='100%';
     canvas.style.height='280px';
     renderText('rendering...');
     canvas.onMouseMove.listen(handleMouseMove);
 
-    container.innerHtml = '';
+    container.innerHTML = ''.toJS;
     container.style.position = 'relative';
     container.append(canvas);
     container.append(canvasTip);
@@ -108,7 +108,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
         activePoint = i;
         canvasTip.style.left = (points[i].x + offsetX).toString() + "px";
         canvasTip.style.top = (points[i].y + offsetY).toString() + "px";
-        canvasTip.innerHtml = points[i].time + '<br/>' + points[i].value;
+        canvasTip.innerHTML = (points[i].time + '<br/>' + points[i].value).toJS;
         canvasTip.style.display = 'block';
       }
     }
@@ -297,22 +297,22 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
   renderPoints() {
     var ctx = startRender();
-    ctx.fillStyle = 'black';
+    ctx.fillStyle = 'black'.toJS;
     ctx.font = '8pt Arial';
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#ddd';
+    ctx.strokeStyle = '#ddd'.toJS;
     var chartWidth = width - smallMargin - valueMargin;
     var chartHeight = height - timeMargin - smallMargin;
     ctx.strokeRect(valueMargin, smallMargin, chartWidth, chartHeight);
 
-    ctx.strokeStyle = 'black';
+    ctx.strokeStyle = 'black'.toJS;
     ctx.save();
     ctx.textAlign="right";
     ctx.textBaseline="middle";
     var valueStepWidth = (height - timeMargin - smallMargin) / (valueLabels.length - 1);
     for (var i = 0; i < valueLabels.length; i++) {
-      ctx.strokeStyle = '#ccc';
+      ctx.strokeStyle = '#ccc'.toJS;
       ctx.beginPath();
       ctx.moveTo(valueMargin, smallMargin + (i * valueStepWidth));
       ctx.lineTo(width - smallMargin, smallMargin + (i * valueStepWidth));
@@ -327,7 +327,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     for (var time in timeLabels.keys) {
       ctx.save();
       ctx.translate(0, chartWidth * ((time - minTime!) / (maxTime! - minTime!)));
-      ctx.strokeStyle = '#ccc';
+      ctx.strokeStyle = '#ccc'.toJS;
       ctx.beginPath();
       ctx.moveTo(0, 0);
       ctx.lineTo(chartHeight, 0);
@@ -339,8 +339,8 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
     bool first = true;
     ctx.beginPath();
-    ctx.strokeStyle = _lineColor;
-    ctx.fillStyle = _lineColor;
+    ctx.strokeStyle = _lineColor.toJS;
+    ctx.fillStyle = _lineColor.toJS;
     ctx.lineWidth = _lineWidth;
 
     for (int i =0; i< points.length; i++) {
