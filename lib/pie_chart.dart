@@ -11,18 +11,17 @@ class PieChartItem {
   String? color;
   bool isActive = false;
   static int maxLabelLength = 14;
-  String? description = null;
+  String? description;
 
   PieChartItem(this.label, this.weight, {this.color}):
-    shortLabel = (label.length > maxLabelLength) ? label.substring(0, maxLabelLength - 2) + '..' : label {
-  }
+    shortLabel = (label.length > maxLabelLength) ? '${label.substring(0, maxLabelLength - 2)}..' : label;
 }
-/**
- * Simple PieChart
- */
+/// Simple PieChart
 class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
+  @override
   List<PieChartItem> items = [];
+  @override
   HTMLCanvasElement canvas;
   HTMLDivElement container;
   bool legend;
@@ -30,6 +29,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
   static int maxLabels = 14;
 
+  @override
   setData(List<PieChartItem> items) {
     items.sort((a, b) => -a.weight.compareTo(b.weight));
     totalWeight = items.map((item) => item.weight).reduce((a, b) => a + b);
@@ -39,7 +39,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
       var leftWeight = lefts.map((i) => i.weight).reduce((a, b) => a + b);
       items.add(
           PieChartItem('other..', leftWeight)
-            ..description = lefts.map((i) => (100 * i.weight / totalWeight).toStringAsFixed(2) + '% ' + i.label).join('<br/>')
+            ..description = lefts.map((i) => '${(100 * i.weight / totalWeight).toStringAsFixed(2)}% ${i.label}').join('<br/>')
       );
     }
     var c = 0;
@@ -58,8 +58,8 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
   }
 
   SwiftPieChart(this.container, { this.legend = false }) :
-        canvas = new CanvasElement(),
-        canvasTip = new HTMLDivElement()
+        canvas = HTMLCanvasElement(),
+        canvasTip = HTMLDivElement()
   {
     container.innerHTML = ''.toJS;
     container.append(canvas);
@@ -104,11 +104,11 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
   void handleMouseMove(MouseEvent event){
     var rect = (event.target as Element).getBoundingClientRect();
-    var x = event.client.x - rect.left; //x position within the element.
-    var y = event.client.y - rect.top;  //y position within the element.
+    var x = event.clientX - rect.left; //x position within the element.
+    var y = event.clientY - rect.top;  //y position within the element.
 
     var rerender = false;
-    PieChartItem? currentItem = null;
+    PieChartItem? currentItem;
     var radius = (min(width, height) / 2) * 0.9;
 
     if ((x > width - legendWidth) && (y > height - legendHeight)) {
@@ -152,7 +152,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
         item.isActive = false;
       }
     }
-    canvasTip.innerHTML = ('<strong>' + (currentItem?.label ?? '') + '</strong><br/>' + (currentItem?.description ?? ((currentItem?.weight ?? 0) * 100 / totalWeight).toStringAsFixed(2) + '%')).toJS;
+    canvasTip.innerHTML = ('<strong>${currentItem?.label ?? ''}</strong><br/>${currentItem?.description ?? '${((currentItem?.weight ?? 0) * 100 / totalWeight).toStringAsFixed(2)}%'}').toJS;
     canvasTip.style.display = currentItem != null ? 'block' : 'none';
 
     canvasTip.style.right = (x < width / 2) ? '0' : 'auto';
@@ -165,20 +165,21 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
     }
   }
 
-  setColors(List<String> colors) {
+  void setColors(List<String> colors) {
     _colors = colors;
   }
 
   String get legendFont => "10pt Helvetica";
 
   double totalWeight = 0;
-  render() {
-    var ctx = this.startRender();
+  @override
+  void render() {
+    var ctx = startRender();
     legendWidth = 0;
 
     ctx.font = legendFont;
     items.map((item) => ctx.measureText(legendLabel(item)).width).forEach((a) {
-      if (a! > legendWidth) {
+      if (a > legendWidth) {
         legendWidth = a.ceil();
       }
     });
@@ -208,7 +209,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
   int legendWidth = 0;
 
 
-  drawSegment(CanvasRenderingContext2D ctx, int idx, PieChartItem item, double start) {
+  void drawSegment(CanvasRenderingContext2D ctx, int idx, PieChartItem item, double start) {
     ctx.save();
 
     var radius = (min(width, height) / 2) * (item.isActive ? 0.88 : 0.82);
@@ -226,7 +227,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
     ctx.fill();
     ctx.restore();
 
-    this.drawSegmentLabel(ctx, idx, item, start);
+    drawSegmentLabel(ctx, idx, item, start);
   }
 
   double degreesToRadians(double degrees) {
@@ -234,12 +235,12 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
   }
 
   String legendLabel(PieChartItem item) {
-    return (item.weight * 100 / totalWeight).round().toString() + '% ' + item.shortLabel;
+    return '${(item.weight * 100 / totalWeight).round()}% ${item.shortLabel}';
   }
 
-  drawSegmentLabel(CanvasRenderingContext2D ctx, int idx, PieChartItem item, double start) {
+  void drawSegmentLabel(CanvasRenderingContext2D ctx, int idx, PieChartItem item, double start) {
     ctx.save();
-    var angle = this.degreesToRadians((start / totalWeight) * 360 - 90);
+    var angle = degreesToRadians((start / totalWeight) * 360 - 90);
 
     ctx.translate(centerX, centerY);
     ctx.rotate(angle);
@@ -248,7 +249,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
     ctx.textAlign = "right";
     int fontSize = min(11, (height / 25)).floor();
-    ctx.font = (item.isActive ? "bold " : '') + fontSize.toString() + "pt Helvetica";
+    ctx.font = "${item.isActive ? "bold " : ''}${fontSize}pt Helvetica";
     ctx.fillStyle = 'black'.toJS;
 
     ctx.fillText(item.shortLabel, dx, dy);

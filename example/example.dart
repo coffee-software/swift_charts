@@ -58,9 +58,9 @@ void main() {
         ])
   );
 
-  charts.forEach((element) {element.render();});
+  for (var element in charts) {element.render();}
 
   window.addEventListener('resize', () {
-    charts.forEach((element) {element.render();});
+    for (var element in charts) {element.render();}
   }.toJS);
 }

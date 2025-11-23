@@ -17,21 +17,21 @@ class TimeChartPoint {
 typedef TimeChartValueFormatter = String Function(num value);
 typedef TimeChartDateFormatter = String Function(DateTime date);
 
-/**
- * Chart that renders datapoints indexed by milisecondsSinceEpoch
- */
+/// Chart that renders datapoints indexed by milisecondsSinceEpoch
 class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
+  @override
   Map<int,num> items = {};
   List<TimeChartPoint> points = [];
   HTMLDivElement canvasTip;
 
   HTMLDivElement container;
-  CanvasElement canvas;
+  @override
+  HTMLCanvasElement canvas;
 
   SwiftTimeChart(this.container) :
-        canvas = new CanvasElement(),
-        canvasTip = new HTMLDivElement()
+        canvas = HTMLCanvasElement(),
+        canvasTip = HTMLDivElement()
   {
     canvas.style.width='100%';
     canvas.style.height='280px';
@@ -54,9 +54,9 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
   }
 
   int valueStepsCount = 6;
-  int? currentActivePoint = null;
+  int? currentActivePoint;
 
-  TimeChartValueFormatter? valueFormatter = null;
+  TimeChartValueFormatter? valueFormatter;
 
   String formatValue(num value) {
     if (valueFormatter != null) {
@@ -65,17 +65,16 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     return value.toStringAsFixed(max(0, (- ((log(magnitude) / ln10) - 1)).round()));
   }
 
-  TimeChartDateFormatter? dateFormatter = null;
+  TimeChartDateFormatter? dateFormatter;
 
   String formatTime(DateTime date) {
     if (dateFormatter != null) {
       return dateFormatter!(date);
     }
-    return date.year.toString() + '-' + forceTwoDigits(date.month) + '-' + forceTwoDigits(date.day) + ' '
-        + forceTwoDigits(date.hour) + ':' + forceTwoDigits(date.minute);
+    return '${date.year}-${forceTwoDigits(date.month)}-${forceTwoDigits(date.day)} ${forceTwoDigits(date.hour)}:${forceTwoDigits(date.minute)}';
   }
 
-  void onPointClick(void callback(int id)) {
+  void onPointClick(void Function(int id) callback) {
     canvas.onClick.listen((e){
       if (currentActivePoint != null) {
         callback(points[currentActivePoint!].key);
@@ -85,8 +84,8 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
   void handleMouseMove(MouseEvent event){
     var rect = (event.target as Element).getBoundingClientRect();
-    var x = event.client.x - rect.left; //x position within the element.
-    var y = event.client.y - rect.top;  //y position within the element.
+    var x = event.clientX - rect.left; //x position within the element.
+    var y = event.clientY - rect.top;  //y position within the element.
     int offsetX = 60;
     int offsetY = 35;
     if (x > rect.width / 2) {
@@ -98,7 +97,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     offsetX -= 50;
     offsetY -= 25;
     canvasTip.style.display = 'none';
-    int? activePoint = null;
+    int? activePoint;
     for (var i = 0; i < points.length; i++) {
       var dx = x - points[i].x;
       var dy = y - points[i].y;
@@ -106,9 +105,9 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
       if ((dx * dx) + (dy * dy) < 100) {
         points[i].active = true;
         activePoint = i;
-        canvasTip.style.left = (points[i].x + offsetX).toString() + "px";
-        canvasTip.style.top = (points[i].y + offsetY).toString() + "px";
-        canvasTip.innerHTML = (points[i].time + '<br/>' + points[i].value).toJS;
+        canvasTip.style.left = "${points[i].x + offsetX}px";
+        canvasTip.style.top = "${points[i].y + offsetY}px";
+        canvasTip.innerHTML = ('${points[i].time}<br/>${points[i].value}').toJS;
         canvasTip.style.display = 'block';
       }
     }
@@ -120,15 +119,15 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
   List<double> getValueLabels(num minValue, num maxValue) {
     List<double> ret = [];
-    for (var i = 0; i < this.valueStepsCount; i++) {
-      var valueStep = maxValue - (((maxValue - minValue) * i) / (this.valueStepsCount - 1));
+    for (var i = 0; i < valueStepsCount; i++) {
+      var valueStep = maxValue - (((maxValue - minValue) * i) / (valueStepsCount - 1));
       ret.add(valueStep);
     }
     return ret;
   }
 
   String forceTwoDigits(int i) {
-    return (i < 10 ? '0' + i.toString() : i.toString());
+    return (i < 10 ? '0$i' : i.toString());
   }
 
   Map<int, String> getTimeLabels(int minTime, int maxTime ) {
@@ -146,13 +145,13 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     var formatter = (DateTime date) => '';
     if (hoursDiff < 30) {
       step = hour * 4;
-      formatter = (DateTime date) => this.forceTwoDigits(date.hour) + ':' + this.forceTwoDigits(date.minute);
+      formatter = (DateTime date) => '${forceTwoDigits(date.hour)}:${forceTwoDigits(date.minute)}';
     } else if (hoursDiff < (24 * 8)) {
       step = hour * 24;
-      formatter = (DateTime date) => days[date.weekday - 1] + ' ' + date.day.toString();
+      formatter = (DateTime date) => '${days[date.weekday - 1]} ${date.day}';
     } else if (hoursDiff < (24 * 100)) {
       step = hour * 24 * 5;
-      formatter = (DateTime date) => months[date.month - 1] + ' ' + date.day.toString();
+      formatter = (DateTime date) => '${months[date.month - 1]} ${date.day}';
     } else {
       step = hour * 24;
       allowedMonthDays = [1];
@@ -161,7 +160,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
         formatter = (DateTime date) => months[date.month - 1];
       } else if (hoursDiff < (24 * 1000)) {
         allowedMonths = [0, 6];
-        formatter = (DateTime date) => months[date.month - 1] + ' ' + date.year.toString();
+        formatter = (DateTime date) => '${months[date.month - 1]} ${date.year}';
       } else {
         allowedMonths = [0];
         formatter = (DateTime date) => date.year.toString();
@@ -169,12 +168,12 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     }
     int stepTime = (minTime / step).ceil() * step;
     while (stepTime < maxTime) {
-      var stepDate = new DateTime.fromMillisecondsSinceEpoch(stepTime);
-      if (allowedMonthDays.isNotEmpty && (allowedMonthDays.indexOf(stepDate.day) == -1)) {
+      var stepDate = DateTime.fromMillisecondsSinceEpoch(stepTime);
+      if (allowedMonthDays.isNotEmpty && (!allowedMonthDays.contains(stepDate.day))) {
         stepTime += step;
         continue;
       }
-      if (allowedMonths.isNotEmpty && (allowedMonths.indexOf(stepDate.month) == -1)) {
+      if (allowedMonths.isNotEmpty && (!allowedMonths.contains(stepDate.month))) {
         stepTime += step;
         continue;
       }
@@ -194,21 +193,21 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
   }
 
   int measureText(CanvasRenderingContext2D ctx, String text) {
-    return (ctx.measureText(text).width)!.round();
+    return (ctx.measureText(text).width).round();
   }
 
   String _lineColor = 'black';
-  setLineColor(String color) {
+  void setLineColor(String color) {
     _lineColor = color;
   }
 
   int _lineWidth = 2;
-  setLineWidth(int width) {
+  void setLineWidth(int width) {
     _lineWidth = width;
   }
 
   int _pointSize = 4;
-  setPointSize(int size) {
+  void setPointSize(int size) {
     _pointSize = size;
   }
 
@@ -217,21 +216,22 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
   int timeMargin = 0;
   int textMargin = 4;
 
-  int? minTime = null;
-  int? maxTime = null;
+  int? minTime;
+  int? maxTime;
 
   List<double> valueLabels = [];
   Map<int, String> timeLabels = {};
 
   double magnitude = 0.0;
 
-  render() {
+  @override
+  void render() {
     CanvasRenderingContext2D ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
     minTime = null;
     maxTime = null;
-    num? minValue = null;
-    num? maxValue = null;
+    num? minValue;
+    num? maxValue;
     for (var key in items.keys) {
       var time = key;
       var value = items[key]!;
@@ -280,14 +280,14 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     for (var key in items.keys) {
       var time = key;
       var value = items[key]!;
-      var date = new DateTime.fromMillisecondsSinceEpoch(time).toUtc();
+      var date = DateTime.fromMillisecondsSinceEpoch(time).toUtc();
       points.add(
           TimeChartPoint(
               key,
               (((time - minTime!) / (maxTime! - minTime!)) * (width - valueMargin - smallMargin) + valueMargin).round(),
               (height - (((value - minValue) / (maxValue - minValue)) * (height - timeMargin - smallMargin)) - timeMargin).round(),
               formatTime(date),
-              'value: ' + formatValue(items[key]!)
+              'value: ${formatValue(items[key]!)}'
           )
       );
     }
@@ -295,7 +295,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     renderPoints();
   }
 
-  renderPoints() {
+  void renderPoints() {
     var ctx = startRender();
     ctx.fillStyle = 'black'.toJS;
     ctx.font = '8pt Arial';

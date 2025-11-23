@@ -6,19 +6,19 @@ export 'pie_chart.dart';
 
 abstract class SwiftChart<T> {
 
-  abstract CanvasElement canvas;
+  abstract HTMLCanvasElement canvas;
   abstract T items;
 
-  setData(T items) {
+  void setData(T items) {
     this.items = items;
   }
 
-  render();
+  void render();
 
   int get width => canvas.clientWidth;
   int get height => canvas.clientHeight;
 
-  renderText(String text) {
+  void renderText(String text) {
     var ctx = startRender();
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
