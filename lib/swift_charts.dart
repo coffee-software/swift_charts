@@ -3,9 +3,7 @@ import 'package:web/web.dart';
 export 'time_chart.dart';
 export 'pie_chart.dart';
 
-
 abstract class SwiftChart<T> {
-
   abstract HTMLCanvasElement canvas;
   abstract T items;
 
@@ -32,5 +30,4 @@ abstract class SwiftChart<T> {
     ctx.clearRect(0, 0, width, height);
     return ctx;
   }
-
 }

@@ -18,10 +18,9 @@ typedef TimeChartValueFormatter = String Function(num value);
 typedef TimeChartDateFormatter = String Function(DateTime date);
 
 /// Chart that renders datapoints indexed by milisecondsSinceEpoch
-class SwiftTimeChart extends SwiftChart<Map<int,num>> {
-
+class SwiftTimeChart extends SwiftChart<Map<int, num>> {
   @override
-  Map<int,num> items = {};
+  Map<int, num> items = {};
   List<TimeChartPoint> points = [];
   HTMLDivElement canvasTip;
 
@@ -29,12 +28,11 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
   @override
   HTMLCanvasElement canvas;
 
-  SwiftTimeChart(this.container) :
-        canvas = HTMLCanvasElement(),
-        canvasTip = HTMLDivElement()
-  {
-    canvas.style.width='100%';
-    canvas.style.height='280px';
+  SwiftTimeChart(this.container)
+      : canvas = HTMLCanvasElement(),
+        canvasTip = HTMLDivElement() {
+    canvas.style.width = '100%';
+    canvas.style.height = '280px';
     renderText('rendering...');
     canvas.onMouseMove.listen(handleMouseMove);
 
@@ -62,7 +60,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     if (valueFormatter != null) {
       return valueFormatter!(value);
     }
-    return value.toStringAsFixed(max(0, (- ((log(magnitude) / ln10) - 1)).round()));
+    return value.toStringAsFixed(max(0, (-((log(magnitude) / ln10) - 1)).round()));
   }
 
   TimeChartDateFormatter? dateFormatter;
@@ -75,17 +73,17 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
   }
 
   void onPointClick(void Function(int id) callback) {
-    canvas.onClick.listen((e){
+    canvas.onClick.listen((e) {
       if (currentActivePoint != null) {
         callback(points[currentActivePoint!].key);
       }
     });
   }
 
-  void handleMouseMove(MouseEvent event){
+  void handleMouseMove(MouseEvent event) {
     var rect = (event.target as Element).getBoundingClientRect();
     var x = event.clientX - rect.left; //x position within the element.
-    var y = event.clientY - rect.top;  //y position within the element.
+    var y = event.clientY - rect.top; //y position within the element.
     int offsetX = 60;
     int offsetY = 35;
     if (x > rect.width / 2) {
@@ -130,13 +128,12 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     return (i < 10 ? '0$i' : i.toString());
   }
 
-  Map<int, String> getTimeLabels(int minTime, int maxTime ) {
-
+  Map<int, String> getTimeLabels(int minTime, int maxTime) {
     Map<int, String> ret = {};
 
     var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
-    var hour = 1000 * 60 *60;
+    var days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    var hour = 1000 * 60 * 60;
     var hoursDiff = ((maxTime - minTime) / hour);
 
     var step = 0;
@@ -281,15 +278,12 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
       var time = key;
       var value = items[key]!;
       var date = DateTime.fromMillisecondsSinceEpoch(time).toUtc();
-      points.add(
-          TimeChartPoint(
-              key,
-              (((time - minTime!) / (maxTime! - minTime!)) * (width - valueMargin - smallMargin) + valueMargin).round(),
-              (height - (((value - minValue) / (maxValue - minValue)) * (height - timeMargin - smallMargin)) - timeMargin).round(),
-              formatTime(date),
-              'value: ${formatValue(items[key]!)}'
-          )
-      );
+      points.add(TimeChartPoint(
+          key,
+          (((time - minTime!) / (maxTime! - minTime!)) * (width - valueMargin - smallMargin) + valueMargin).round(),
+          (height - (((value - minValue) / (maxValue - minValue)) * (height - timeMargin - smallMargin)) - timeMargin).round(),
+          formatTime(date),
+          'value: ${formatValue(items[key]!)}'));
     }
     //RENDER POINTS
     renderPoints();
@@ -308,8 +302,8 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
     ctx.strokeStyle = 'black'.toJS;
     ctx.save();
-    ctx.textAlign="right";
-    ctx.textBaseline="middle";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
     var valueStepWidth = (height - timeMargin - smallMargin) / (valueLabels.length - 1);
     for (var i = 0; i < valueLabels.length; i++) {
       ctx.strokeStyle = '#ccc'.toJS;
@@ -322,8 +316,8 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
 
     ctx.translate(valueMargin, height - timeMargin);
     ctx.rotate(-pi / 2);
-    ctx.textAlign="right";
-    ctx.textBaseline="middle";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
     for (var time in timeLabels.keys) {
       ctx.save();
       ctx.translate(0, chartWidth * ((time - minTime!) / (maxTime! - minTime!)));
@@ -343,7 +337,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
     ctx.fillStyle = _lineColor.toJS;
     ctx.lineWidth = _lineWidth;
 
-    for (int i =0; i< points.length; i++) {
+    for (int i = 0; i < points.length; i++) {
       if (first) {
         ctx.moveTo(points[i].x, points[i].y);
         first = false;
@@ -355,7 +349,7 @@ class SwiftTimeChart extends SwiftChart<Map<int,num>> {
       }
     }
     ctx.stroke();
-    for (int i =0; i< points.length; i++) {
+    for (int i = 0; i < points.length; i++) {
       ctx.beginPath();
       if (points[i].active) {
         ctx.arc(points[i].x, points[i].y, _pointSize, 0, 2 * pi);
