@@ -1,4 +1,4 @@
-
+/// Used to generate colors for charts with no colors set.
 abstract class ColorGenerator {
   static const double _goldenAngle = 137.50776; // degrees; 360 * (1 - 1/phi)
 
@@ -30,12 +30,31 @@ abstract class ColorGenerator {
     final x = c * (1 - ((h / 60) % 2 - 1).abs());
     final m = l - c / 2;
     double r1 = 0, g1 = 0, b1 = 0;
-    if (h < 60)       { r1 = c; g1 = x; b1 = 0; }
-    else if (h < 120) { r1 = x; g1 = c; b1 = 0; }
-    else if (h < 180) { r1 = 0; g1 = c; b1 = x; }
-    else if (h < 240) { r1 = 0; g1 = x; b1 = c; }
-    else if (h < 300) { r1 = x; g1 = 0; b1 = c; }
-    else              { r1 = c; g1 = 0; b1 = x; }
+    if (h < 60) {
+      r1 = c;
+      g1 = x;
+      b1 = 0;
+    } else if (h < 120) {
+      r1 = x;
+      g1 = c;
+      b1 = 0;
+    } else if (h < 180) {
+      r1 = 0;
+      g1 = c;
+      b1 = x;
+    } else if (h < 240) {
+      r1 = 0;
+      g1 = x;
+      b1 = c;
+    } else if (h < 300) {
+      r1 = x;
+      g1 = 0;
+      b1 = c;
+    } else {
+      r1 = c;
+      g1 = 0;
+      b1 = x;
+    }
 
     int toHex(double v) => ((v + m) * 255).round().clamp(0, 255);
     final r = toHex(r1), g = toHex(g1), b = toHex(b1);
@@ -43,5 +62,4 @@ abstract class ColorGenerator {
         '${g.toRadixString(16).padLeft(2, '0')}'
         '${b.toRadixString(16).padLeft(2, '0')}';
   }
-
 }

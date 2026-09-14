@@ -6,6 +6,7 @@ import 'swift_charts.dart';
 import 'chart_colors.dart';
 import 'package:web/web.dart';
 
+/// Single Pie Chart item.
 class PieChartItem {
   String label;
   String shortLabel;
@@ -27,7 +28,8 @@ class PieChartItem {
   }
 
   PieChartItem(this.label, num weight, {String? color})
-      : _weight = weight, shortLabel = (label.length > maxLabelLength) ? '${label.substring(0, maxLabelLength - 2)}..' : label {
+      : _weight = weight,
+        shortLabel = (label.length > maxLabelLength) ? '${label.substring(0, maxLabelLength - 2)}..' : label {
     this.color = color ?? ColorGenerator.nextColor();
   }
 }
@@ -44,7 +46,7 @@ class SwiftPieChart extends SwiftChart {
 
   static int maxLabels = 14;
 
-  void updateData() {
+  void _updateData() {
     data.sort((a, b) => -a.weight.compareTo(b.weight));
     totalWeight = data.map((item) => item.weight).reduce((a, b) => a + b);
     if (data.length > maxLabels) {
@@ -54,25 +56,9 @@ class SwiftPieChart extends SwiftChart {
       data.add(PieChartItem('other..', leftWeight)
         ..description = lefts.map((i) => '${(100 * i.weight / totalWeight).toStringAsFixed(2)}% ${i.label}').join('<br/>'));
     }
-    /*var c = 0;
-    for (var i = 0; i < data.length; i++) {
-      if (i == data.length - 1 && c == 0) {
-        //make sure last color is different than first
-        c = 1;
-      }
-      data[i].color = _colors[c];
-      c++;
-      if (c >= _colors.length) {
-        c = 0;
-      }
-    }*/
   }
 
-  SwiftPieChart({
-    required this.container,
-    required this.data,
-    this.legend = false
-  })
+  SwiftPieChart({required this.container, required this.data, this.legend = false})
       : canvas = HTMLCanvasElement(),
         canvasTip = HTMLDivElement() {
     container.innerHTML = ''.toJS;
@@ -104,18 +90,6 @@ class SwiftPieChart extends SwiftChart {
       render();
     });
   }
-
-/*
-  List<String> _colors = [
-    '#c472e8',
-    '#ff8d72',
-    '#f76ad1',
-    '#ffab55',
-    '#ff69b3',
-    '#ffc940',
-    '#ff7692',
-    '#ffe640',
-  ];*/
 
   void handleMouseLeave(MouseEvent event) {
     for (var item in data) {
@@ -149,7 +123,6 @@ class SwiftPieChart extends SwiftChart {
     var rerender = false;
     PieChartItem? currentItem;
     var radius = (min(width, height) / 2) * 0.9;
-    //TODO: copy placement from line chart!
     if ((x > width - legendWidth) && (y > height - legendHeight)) {
       num ly = (y - (height - legendHeight));
       for (var item in data) {
@@ -194,20 +167,10 @@ class SwiftPieChart extends SwiftChart {
             .toJS;
     canvasTip.style.display = currentItem != null ? 'block' : 'none';
 
-    //canvasTip.style.right = (x < width / 2) ? '0' : 'auto';
-    //canvasTip.style.left = (x >= width / 2) ? '0' : 'auto';
-    //canvasTip.style.bottom = (y < height / 2) ? '0' : 'auto';
-    //canvasTip.style.top = (y >= height / 2) ? '0' : 'auto';
-
     if (rerender) {
       render();
     }
   }
-
-  /*
-  void setColors(List<String> colors) {
-    _colors = colors;
-  }*/
 
   String get legendFont => "10pt Helvetica";
 
@@ -215,7 +178,7 @@ class SwiftPieChart extends SwiftChart {
 
   @override
   void render() {
-    updateData();
+    _updateData();
     var ctx = startRender();
     legendWidth = 0;
 
@@ -263,7 +226,7 @@ class SwiftPieChart extends SwiftChart {
     ctx.arc(centerX, centerY, radius, startingAngle, endingAngle, false);
     ctx.closePath();
 
-    ctx.fillStyle = (item.color ?? '').toJS;
+    ctx.fillStyle = item.color.toJS;
     ctx.fill();
     ctx.restore();
 
@@ -296,14 +259,14 @@ class SwiftPieChart extends SwiftChart {
 
     ctx.restore();
 
-    ctx.fillStyle = (item.color ?? '').toJS;
+    ctx.fillStyle = item.color.toJS;
     //ctx.fillRect(width - legendWidth, height - legendHeight, legendWidth, legendHeight);
     //ctx.fillText(item.label, 10, 10);
     int legendSize = 5;
     if (legend) {
       int x = width - legendWidth + 5;
       int y = height - legendHeight + (idx * 20) + 10;
-      ctx.fillStyle = (item.color ?? '').toJS;
+      ctx.fillStyle = item.color.toJS;
       legendSize = item.isActive ? 7 : 5;
       ctx.fillRect(x - legendSize, y - legendSize, 2 * legendSize, 2 * legendSize);
 

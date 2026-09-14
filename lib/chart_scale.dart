@@ -13,7 +13,6 @@ class ChartScale {
   final List<double> lines;
   final String textColor;
 
-
   final TimeChartValueFormatter? valueFormatter;
   final TimeChartValueFormatter? legendFormatter;
 
@@ -33,15 +32,14 @@ class ChartScale {
     return formatValue(value);
   }
 
-  const ChartScale({
-    required this.position,
-    required this.min,
-    required this.max,
-    required this.lines,
-    this.textColor = '#333',
-    this.valueFormatter,
-    this.legendFormatter
-  });
+  const ChartScale(
+      {required this.position,
+      required this.min,
+      required this.max,
+      required this.lines,
+      this.textColor = '#333',
+      this.valueFormatter,
+      this.legendFormatter});
 
   static ChartScale byStep(
       {required ChartScalePosition position, required double min, required double max, required double step}) {

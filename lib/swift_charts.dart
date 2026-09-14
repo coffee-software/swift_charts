@@ -41,6 +41,7 @@ class _ChartStyles {
   }
 }
 
+/// Abstract base for all chart types
 abstract class SwiftChart {
   abstract HTMLCanvasElement canvas;
 

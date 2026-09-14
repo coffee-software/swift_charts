@@ -11,18 +11,11 @@ import 'package:web/web.dart';
 
 typedef TimeChartDateFormatter = String Function(DateTime date);
 
-enum TimeChartDateDisplay {
-  utc,
-  local,
-  both
-}
+enum TimeChartDateDisplay { utc, local, both }
 
-enum IntervalAlignment {
-  start,
-  end,
-  center
-}
+enum IntervalAlignment { start, end, center }
 
+/// Single series on a time chart
 sealed class TimeChartSeries {
   late String color;
 
@@ -44,7 +37,6 @@ sealed class TimeChartSeries {
   ///
   IntervalAlignment? alignment;
 
-
   late ObservableMap<int, num> _data;
 
   /// Set by the chart when this series is attached, so mutations reach it.
@@ -64,16 +56,10 @@ sealed class TimeChartSeries {
     }
   }
 
-  TimeChartSeries({
-    required Map<int, num> data,
-    this.scale,
-    String? color,
-    this.interval,
-    this.alignment,
-    this.valueTitle = 'value'
-  }) {
+  TimeChartSeries(
+      {required Map<int, num> data, this.scale, String? color, this.interval, this.alignment, this.valueTitle = 'value'}) {
     this.color = color ?? ColorGenerator.nextColor();
-// wire the wrapper's callback to route through our own notify hook
+    // wire the wrapper's callback to route through our own notify hook
     _data = ObservableMap(Map.of(data), () => _notify?.call());
   }
 
@@ -84,7 +70,6 @@ sealed class TimeChartSeries {
 }
 
 class LineSeries extends TimeChartSeries {
-
   String? shadowColor;
   int lineWidth;
   int pointRadius;
@@ -104,12 +89,12 @@ class LineSeries extends TimeChartSeries {
       this.pointRadius = 2,
       this.hoverPointRadius,
       String? shadowColor}) {
-    this.shadowColor = shadowColor ?? (color.startsWith('#') ? color + '11' : null);
+    this.shadowColor = shadowColor ?? (color.startsWith('#') ? '${color}11' : null);
   }
 
   @override
   void render(SwiftTimeChart chart, CanvasRenderingContext2D ctx) {
-//shadow!
+    //shadow!
     if (shadowColor != null) {
       ctx.beginPath();
       ctx.fillStyle = shadowColor!.toJS;
@@ -172,7 +157,6 @@ class LineSeries extends TimeChartSeries {
 }
 
 class BarSeries extends TimeChartSeries {
-
   String strokeColor;
   String? hoverColor;
   int strokeWidth;
@@ -183,19 +167,19 @@ class BarSeries extends TimeChartSeries {
   int numBars = 0;
   int barIndex = 0;
 
-  BarSeries(
-      {required super.data,
-      super.scale,
-      super.color,
-      super.interval,
-      super.alignment,
-      super.valueTitle = 'value',
-      this.hoverColor,
-      this.strokeColor = '#0007',
-      this.strokeWidth = 0,
-      this.borderRadius = 0,
-      this.barWidth,
-      });
+  BarSeries({
+    required super.data,
+    super.scale,
+    super.color,
+    super.interval,
+    super.alignment,
+    super.valueTitle = 'value',
+    this.hoverColor,
+    this.strokeColor = '#0007',
+    this.strokeWidth = 0,
+    this.borderRadius = 0,
+    this.barWidth,
+  });
 
   @override
   void render(SwiftTimeChart chart, CanvasRenderingContext2D ctx) {
@@ -213,12 +197,10 @@ class BarSeries extends TimeChartSeries {
       final offset = (barIndex * w) - ((w * numBars) / 2);
 
       if (chart.chartHeight + chart._topMargin > point.y) {
-        /*ctx.roundRect(point.x - (w / 2), point.y, w, chart.chartHeight + chart.topMargin - point.y);
-          CanvasRenderingContext2D.fill] or [CanvasRenderingContext2D.stroke*/
-
         if (ctx.hasProperty('roundRect'.toJS).toDart) {
           ctx.beginPath();
-          ctx.roundRect(point.x + offset, point.y, w, chart.chartHeight + chart._topMargin - point.y, <JSAny?>[borderRadius.toJS, borderRadius.toJS, 0.toJS, 0.toJS].toJS);
+          ctx.roundRect(point.x + offset, point.y, w, chart.chartHeight + chart._topMargin - point.y,
+              <JSAny?>[borderRadius.toJS, borderRadius.toJS, 0.toJS, 0.toJS].toJS);
           ctx.fill();
           if (strokeWidth > 0) {
             ctx.stroke();
@@ -227,7 +209,6 @@ class BarSeries extends TimeChartSeries {
           //old safari fallback
           ctx.fillRect(point.x + offset, point.y, w, chart.chartHeight + chart._topMargin - point.y);
         }
-        //ctx.strokeRect(point.x + offset, point.y, w, chart.chartHeight + chart.topMargin - point.y);
       }
     }
   }
@@ -261,19 +242,7 @@ class ChartTransform {
   ({double x, double y}) apply(int time, double value) => (x: sx * time + tx, y: sy * value + ty);
 }
 
-/// Find X axis labels
 enum _Unit { second, minute, hour, day, month, year }
-
-String _2(int n) => n.toString().padLeft(2, '0');
-const _months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const _weekdays = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']; // DateTime.weekday: Mon=1..Sun=7
-
-/// Constructs a DateTime in either UTC or local, keeping calendar arithmetic
-/// consistent with whichever clock we're aligning ticks to. Mixing the two
-/// (e.g. building a "local" DateTime from a UTC one's y/m/d fields) is a
-/// classic subtle bug, so every _Step method threads `utc` through explicitly.
-DateTime _make(bool utc, int y, int m, int d, [int h = 0, int mi = 0, int s = 0]) =>
-    utc ? DateTime.utc(y, m, d, h, mi, s) : DateTime(y, m, d, h, mi, s);
 
 class _Step {
   final _Unit unit;
@@ -281,29 +250,48 @@ class _Step {
   final String Function(DateTime) format;
   const _Step(this.unit, this.mult, this.format);
 
+  /// Constructs a DateTime in either UTC or local, keeping calendar arithmetic
+  /// consistent with whichever clock we're aligning ticks to. Mixing the two
+  /// (e.g. building a "local" DateTime from a UTC one's y/m/d fields) is a
+  /// classic subtle bug, so every _Step method threads `utc` through explicitly.
+  DateTime _make(bool utc, int y, int m, int d, [int h = 0, int mi = 0, int s = 0]) =>
+      utc ? DateTime.utc(y, m, d, h, mi, s) : DateTime(y, m, d, h, mi, s);
+
   /// Approximate size, used ONLY to pick which step to use. Never used to
   /// place ticks directly — actual placement always walks the calendar via
   /// [next], so this being approximate for day/month/year is fine.
   int get approxMs {
     switch (unit) {
-      case _Unit.second: return mult * 1000;
-      case _Unit.minute: return mult * 60 * 1000;
-      case _Unit.hour:   return mult * 60 * 60 * 1000;
-      case _Unit.day:    return mult * 24 * 60 * 60 * 1000;
-      case _Unit.month:  return mult * 30 * 24 * 60 * 60 * 1000;
-      case _Unit.year:   return mult * 365 * 24 * 60 * 60 * 1000;
+      case _Unit.second:
+        return mult * 1000;
+      case _Unit.minute:
+        return mult * 60 * 1000;
+      case _Unit.hour:
+        return mult * 60 * 60 * 1000;
+      case _Unit.day:
+        return mult * 24 * 60 * 60 * 1000;
+      case _Unit.month:
+        return mult * 30 * 24 * 60 * 60 * 1000;
+      case _Unit.year:
+        return mult * 365 * 24 * 60 * 60 * 1000;
     }
   }
 
   /// Rounds DOWN to the nearest aligned tick at-or-before [d].
   DateTime floor(DateTime d, bool utc) {
     switch (unit) {
-      case _Unit.second: return _make(utc, d.year, d.month, d.day, d.hour, d.minute, (d.second ~/ mult) * mult);
-      case _Unit.minute: return _make(utc, d.year, d.month, d.day, d.hour, (d.minute ~/ mult) * mult);
-      case _Unit.hour:   return _make(utc, d.year, d.month, d.day, (d.hour ~/ mult) * mult);
-      case _Unit.day:    return _make(utc, d.year, d.month, d.day);
-      case _Unit.month:  return _make(utc, d.year, ((d.month - 1) ~/ mult) * mult + 1, 1);
-      case _Unit.year:   return _make(utc, (d.year ~/ mult) * mult, 1, 1);
+      case _Unit.second:
+        return _make(utc, d.year, d.month, d.day, d.hour, d.minute, (d.second ~/ mult) * mult);
+      case _Unit.minute:
+        return _make(utc, d.year, d.month, d.day, d.hour, (d.minute ~/ mult) * mult);
+      case _Unit.hour:
+        return _make(utc, d.year, d.month, d.day, (d.hour ~/ mult) * mult);
+      case _Unit.day:
+        return _make(utc, d.year, d.month, d.day);
+      case _Unit.month:
+        return _make(utc, d.year, ((d.month - 1) ~/ mult) * mult + 1, 1);
+      case _Unit.year:
+        return _make(utc, (d.year ~/ mult) * mult, 1, 1);
     }
   }
 
@@ -314,48 +302,56 @@ class _Step {
   /// lengths, and leap years without any special-casing here.
   DateTime next(DateTime d, bool utc) {
     switch (unit) {
-      case _Unit.second: return d.add(Duration(seconds: mult));
-      case _Unit.minute: return d.add(Duration(minutes: mult));
-      case _Unit.hour:   return d.add(Duration(hours: mult));
-      case _Unit.day:    return _make(utc, d.year, d.month, d.day + mult);
-      case _Unit.month:  return _make(utc, d.year, d.month + mult, 1);
-      case _Unit.year:   return _make(utc, d.year + mult, 1, 1);
+      case _Unit.second:
+        return d.add(Duration(seconds: mult));
+      case _Unit.minute:
+        return d.add(Duration(minutes: mult));
+      case _Unit.hour:
+        return d.add(Duration(hours: mult));
+      case _Unit.day:
+        return _make(utc, d.year, d.month, d.day + mult);
+      case _Unit.month:
+        return _make(utc, d.year, d.month + mult, 1);
+      case _Unit.year:
+        return _make(utc, d.year + mult, 1, 1);
     }
   }
 }
 
-List<_Step> _buildSteps() {
-  final steps = <_Step>[
-    for (final m in [1, 5, 15, 30]) _Step(_Unit.second, m, (d) => '${_2(d.minute)}:${_2(d.second)}'),
-    for (final m in [1, 5, 15, 30]) _Step(_Unit.minute, m, (d) => '${_2(d.hour)}:${_2(d.minute)}'),
-    for (final m in [1, 3, 6, 12]) _Step(_Unit.hour, m, (d) => '${_2(d.hour)}:00'),
-    _Step(_Unit.day, 1, (d) => '${_weekdays[d.weekday - 1]} ${d.day}'),
+/// Find X axis labels
+class ChartTimeAxis {
+  static String pad2(int n) => n.toString().padLeft(2, '0');
+  static const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // DateTime.weekday: Mon=1..Sun=7
 
-    _Step(_Unit.day, 3, (d) => '${_months[d.month - 1]} ${d.day}'),
-    _Step(_Unit.day, 7, (d) => '${_months[d.month - 1]} ${d.day}'),
-
-    _Step(_Unit.month, 1, (d) => _months[d.month - 1]),
-    _Step(_Unit.month, 3, (d) => '${_months[d.month - 1]} ${d.year}'),
-    _Step(_Unit.month, 6, (d) => '${_months[d.month - 1]} ${d.year}'),
-  ];
-  // Years: generate the standard "1-2-5" nice-number sequence (same scheme
-  // D3/matplotlib use for axis ticks) instead of hardcoding a ceiling, so
-  // century- or millennium-spanning charts still degrade sensibly.
-  for (var scale = 1; scale <= 1000000; scale *= 10) {
-    for (final m in [1, 2, 5]) {
-      steps.add(_Step(_Unit.year, m * scale, (d) => '${d.year}'));
+  static List<_Step> _buildSteps() {
+    final steps = <_Step>[
+      for (final m in [1, 5, 15, 30]) _Step(_Unit.second, m, (d) => '${pad2(d.minute)}:${pad2(d.second)}'),
+      for (final m in [1, 5, 15, 30]) _Step(_Unit.minute, m, (d) => '${pad2(d.hour)}:${pad2(d.minute)}'),
+      for (final m in [1, 3, 6, 12]) _Step(_Unit.hour, m, (d) => '${pad2(d.hour)}:00'),
+      _Step(_Unit.day, 1, (d) => '${_weekdays[d.weekday - 1]} ${d.day}'),
+      _Step(_Unit.day, 3, (d) => '${_months[d.month - 1]} ${d.day}'),
+      _Step(_Unit.day, 7, (d) => '${_months[d.month - 1]} ${d.day}'),
+      _Step(_Unit.month, 1, (d) => _months[d.month - 1]),
+      _Step(_Unit.month, 3, (d) => '${_months[d.month - 1]} ${d.year}'),
+      _Step(_Unit.month, 6, (d) => '${_months[d.month - 1]} ${d.year}'),
+    ];
+    // Years: generate the standard "1-2-5" nice-number sequence (same scheme
+    // D3/matplotlib use for axis ticks) instead of hardcoding a ceiling, so
+    // century- or millennium-spanning charts still degrade sensibly.
+    for (var scale = 1; scale <= 1000000; scale *= 10) {
+      for (final m in [1, 2, 5]) {
+        steps.add(_Step(_Unit.year, m * scale, (d) => '${d.year}'));
+      }
     }
+    return steps;
   }
-  return steps;
 }
 
-final _steps = _buildSteps();
+final _steps = ChartTimeAxis._buildSteps();
 
-
-
-/// Chart that renders datapoints indexed by milisecondsSinceEpoch
+/// Chart that renders data points indexed by milisecondsSinceEpoch
 class SwiftTimeChart extends SwiftChart {
-
   /// controls which wall-clock the labels (and tick alignment) use:
   /// - `utc`: always UTC, same for every viewer everywhere.
   /// - `local`: the viewer's own browser/OS timezone — for a web chart this
@@ -368,8 +364,6 @@ class SwiftTimeChart extends SwiftChart {
 
   /// transformer for mouse moves
   ChartTransform? mouseTransform;
-
-  //Map<int, ({String label, int time})> allTimeLabels = {};
 
   Map<int, int> xToTime = {};
   Map<int, String> timeTooltips = {};
@@ -410,25 +404,25 @@ class SwiftTimeChart extends SwiftChart {
 
   bool rotateTimeLabels;
 
-  SwiftTimeChart({
-    required this.container,
-    required this.series,
-    this.font,
-    this.fontSize = 10,
-    this.textColor = '#333',
-    this.dateDisplay = TimeChartDateDisplay.local,
-    this.margin = 5,
-    this.textMargin = 10,
-    this.dateFormatter,
-    this.gridColor = '#e5e5e5',
-    this.showGrid = true,
-    this.highlightCurrentInterval = false,
-    this.showTip = true,
-    this.showTimeScale = true,
-    this.showValueScale = true,
-    this.rotateTimeLabels = true,
-    this.forcePadding
-  })  : canvas = HTMLCanvasElement(),
+  SwiftTimeChart(
+      {required this.container,
+      required this.series,
+      this.font,
+      this.fontSize = 10,
+      this.textColor = '#333',
+      this.dateDisplay = TimeChartDateDisplay.local,
+      this.margin = 5,
+      this.textMargin = 10,
+      this.dateFormatter,
+      this.gridColor = '#e5e5e5',
+      this.showGrid = true,
+      this.highlightCurrentInterval = false,
+      this.showTip = true,
+      this.showTimeScale = true,
+      this.showValueScale = true,
+      this.rotateTimeLabels = true,
+      this.forcePadding})
+      : canvas = HTMLCanvasElement(),
         canvasTip = HTMLDivElement() {
     container.innerHTML = ''.toJS;
     container.className += ' swift-chart time-chart';
@@ -457,10 +451,6 @@ class SwiftTimeChart extends SwiftChart {
       render();
     });
   }
-
-  //int valueStepsCount = 6;
-  //int? currentActivePoint;
-
 
   String formatTime(DateTime date) {
     if (dateFormatter != null) {
@@ -529,34 +519,24 @@ class SwiftTimeChart extends SwiftChart {
       renderPoints();
     }
   }
-/*
-  List<double> getValueLabels(num minValue, num maxValue, double magnitude) {
-    List<double> ret = [];
-    for (var i = 0; i < valueStepsCount; i++) {
-      var valueStep = maxValue - (((maxValue - minValue) * i) / (valueStepsCount - 1));
-      ret.add(valueStep);
-    }
-    return ret;
-  }
-*/
 
   String forceTwoDigits(int i) {
     return (i < 10 ? '0$i' : i.toString());
   }
+
   /// Generates axis tick labels for [minTime, maxTime] (epoch millis, UTC).
-  ///
   Map<int, String> getTimeLabels(
-      int minTime,
-      int maxTime, {
-        int targetTicks = 5,
-      }) {
+    int minTime,
+    int maxTime, {
+    int targetTicks = 5,
+  }) {
     final utc = dateDisplay == TimeChartDateDisplay.utc;
 
     DateTime resolve(int ms) => DateTime.fromMillisecondsSinceEpoch(ms, isUtc: utc);
 
     final rangeMs = maxTime - minTime;
     final step = _steps.firstWhere(
-          (s) => rangeMs / s.approxMs <= targetTicks,
+      (s) => rangeMs / s.approxMs <= targetTicks,
       orElse: () => _steps.last,
     );
 
@@ -569,7 +549,7 @@ class SwiftTimeChart extends SwiftChart {
       var label = step.format(tick);
       if (dateDisplay == TimeChartDateDisplay.both) {
         final asUtc = DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true);
-        label = '$label\n(UTC ${_2(asUtc.hour)}:${_2(asUtc.minute)})';
+        label = '$label\n(UTC ${ChartTimeAxis.pad2(asUtc.hour)}:${ChartTimeAxis.pad2(asUtc.minute)})';
       }
       ret[ms] = label;
       tick = step.next(tick, utc);
@@ -642,7 +622,6 @@ class SwiftTimeChart extends SwiftChart {
     return (ctx.measureText(text).width).round();
   }
 
-
   Set<ChartScale> allScales = {};
 
   int _rightMargin = 0;
@@ -660,21 +639,10 @@ class SwiftTimeChart extends SwiftChart {
 
   Map<int, String> timeLabels = {};
 
-  //List<double> magnitudes = [];
-
-
-
-  /*Iterable<Point> pointsForChart(int i) {
-    return points.map((p) => Point(p.x, p.ys[i]));
-  }*/
-
   @override
   void render() {
     CanvasRenderingContext2D ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
-    /*if (chartTypes.length < numLines) {
-      chartTypes = List.filled(numLines, TimeChartTypeLine(2, 2, 'black', null));
-    }*/
     minTime = null;
     maxTime = null;
     num minValue = 0;
@@ -724,7 +692,6 @@ class SwiftTimeChart extends SwiftChart {
       maxTime = (maxTime! + (interval!.inMilliseconds / 2)).round();
     }
 
-
     if (maxTime == null) {
       renderMessage('no data');
       return;
@@ -749,16 +716,9 @@ class SwiftTimeChart extends SwiftChart {
         minLines: 2, //configurable??
         maxLines: 3, //configurable??
         forceZero: true, //configurable??
-        minSpan: 1.0
-    );
+        minSpan: 1.0);
 
     for (var i = 0; i < series.length; i++) {
-      /*if (minValues[i] + minSpreads[i] > (maxValues[i] ?? 0)) {
-        maxValues[i] = maxValues[i]! + minSpreads[i];
-      }*/
-
-      //magnitudes[i] = getMagnitude(maxValues[i]!);
-
       series[i].scale ??= defaultScale;
       /*AutoScaler.compute(
           position: positionLeft ? ChartScalePosition.left : ChartScalePosition.right,
@@ -771,10 +731,6 @@ class SwiftTimeChart extends SwiftChart {
 
       positionLeft = !positionLeft;
 
-      /*
-      maxValues[i] = (maxValues[i] / magnitudes[i]).ceil() * magnitudes[i];
-      minValues[i] = (minValues[i] / magnitudes[i]).floor() * magnitudes[i];
-       */
       series[i].minValue = series[i].scale!.min;
       series[i].maxValue = series[i].scale!.max;
 
@@ -812,7 +768,6 @@ class SwiftTimeChart extends SwiftChart {
         }
         _bottomMargin += margin + textMargin;
       } else {
-        //TODO: configurable font size
         _bottomMargin = margin + textMargin + fontSize;
       }
     } else {
@@ -830,7 +785,7 @@ class SwiftTimeChart extends SwiftChart {
     timeTooltips.clear();
     for (var time in allKeysList) {
       var date = DateTime.fromMillisecondsSinceEpoch(time);
-      String legend = switch(dateDisplay) {
+      String legend = switch (dateDisplay) {
         TimeChartDateDisplay.local => '<div>${formatTime(date)}</div>',
         TimeChartDateDisplay.utc => '<div>${formatTime(date.toUtc())}</div>',
         TimeChartDateDisplay.both => '<div>${formatTime(date)}</div><div>(UTC ${formatTime(date.toUtc())})</div>'
@@ -840,12 +795,11 @@ class SwiftTimeChart extends SwiftChart {
         final value = series[i].data[time];
         if (value != null) {
           legend +=
-          '<div>${series[i].valueTitle}: <strong style="color:${series[i].color}">${series[i].scale!.formatValue(value)}</strong></div>';
+              '<div>${series[i].valueTitle}: <strong style="color:${series[i].color}">${series[i].scale!.formatValue(value)}</strong></div>';
         }
       }
       timeTooltips[time] = legend;
     }
-    //RENDER POINTS
     renderPoints();
   }
 
@@ -863,8 +817,7 @@ class SwiftTimeChart extends SwiftChart {
         minValue: 0.0,
         maxValue: 1.0,
         height: 1,
-        topMargin: 0
-    );
+        topMargin: 0);
 
     for (var i = 0; i < series.length; i++) {
       series[i].transform = ChartTransform.forScale(
@@ -875,8 +828,7 @@ class SwiftTimeChart extends SwiftChart {
           minValue: series[i].minValue.toDouble(),
           maxValue: series[i].maxValue.toDouble(),
           height: chartHeight,
-          topMargin: _topMargin
-      );
+          topMargin: _topMargin);
     }
 
     xToTime.clear();
@@ -927,17 +879,10 @@ class SwiftTimeChart extends SwiftChart {
 
         if (scale.position == ChartScalePosition.left) {
           ctx.textAlign = "right";
-          ctx.fillText(
-              scale.formatLegendValue(line),
-              leftScaleX,
-              y
-          );
+          ctx.fillText(scale.formatLegendValue(line), leftScaleX, y);
         } else {
           ctx.textAlign = "left";
-          ctx.fillText(scale.formatLegendValue(line),
-              rightScaleX,
-              y
-          );
+          ctx.fillText(scale.formatLegendValue(line), rightScaleX, y);
         }
         i++;
       }
