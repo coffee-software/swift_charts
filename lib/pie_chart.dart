@@ -18,9 +18,9 @@ class PieChartItem {
 }
 
 /// Simple PieChart
-class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
-  @override
-  List<PieChartItem> items = [];
+class SwiftPieChart extends SwiftChart {
+  List<PieChartItem> data;
+
   @override
   HTMLCanvasElement canvas;
   HTMLDivElement container;
@@ -29,54 +29,45 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
   static int maxLabels = 14;
 
-  @override
-  setData(List<PieChartItem> items) {
-    items.sort((a, b) => -a.weight.compareTo(b.weight));
-    totalWeight = items.map((item) => item.weight).reduce((a, b) => a + b);
-    if (items.length > maxLabels) {
-      var lefts = items.sublist(maxLabels - 1);
-      items = items.sublist(0, maxLabels - 1);
+  void updateData() {
+    data.sort((a, b) => -a.weight.compareTo(b.weight));
+    totalWeight = data.map((item) => item.weight).reduce((a, b) => a + b);
+    if (data.length > maxLabels) {
+      var lefts = data.sublist(maxLabels - 1);
+      data = data.sublist(0, maxLabels - 1);
       var leftWeight = lefts.map((i) => i.weight).reduce((a, b) => a + b);
-      items.add(PieChartItem('other..', leftWeight)
+      data.add(PieChartItem('other..', leftWeight)
         ..description = lefts.map((i) => '${(100 * i.weight / totalWeight).toStringAsFixed(2)}% ${i.label}').join('<br/>'));
     }
     var c = 0;
-    for (var i = 0; i < items.length; i++) {
-      if (i == items.length - 1 && c == 0) {
+    for (var i = 0; i < data.length; i++) {
+      if (i == data.length - 1 && c == 0) {
         //make sure last color is different than first
         c = 1;
       }
-      items[i].color = _colors[c];
+      data[i].color = _colors[c];
       c++;
       if (c >= _colors.length) {
         c = 0;
       }
     }
-    super.setData(items);
   }
 
-  SwiftPieChart(this.container, {this.legend = false})
+  SwiftPieChart({required this.container, required this.data, this.legend = false})
       : canvas = HTMLCanvasElement(),
         canvasTip = HTMLDivElement() {
     container.innerHTML = ''.toJS;
     container.append(canvas);
-    canvas.style.width = '100%';
-    canvas.style.height = '280px';
     canvas.onMouseMove.listen(handleMouseMove);
     canvas.onMouseLeave.listen(handleMouseLeave);
-    renderText('rendering...');
+    renderMessage('rendering...');
     container.append(canvasTip);
-    container.style.position = 'relative';
-
-    canvasTip.style.position = 'absolute';
-    canvasTip.style.border = '1px solid gray';
-    canvasTip.style.background = 'white';
-    canvasTip.style.minWidth = '100px';
-    canvasTip.style.maxWidth = '200px';
-    canvasTip.style.overflow = 'hidden';
-    canvasTip.style.fontSize = '10px';
-    canvasTip.style.padding = '5px';
+    container.className += ' swift-chart time-chart';
+    canvasTip.className = 'tooltip';
     canvasTip.style.display = 'none';
+    SwiftChart.ensureStyles();
+    initObserver();
+    render();
   }
 
   List<String> _colors = [
@@ -91,7 +82,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
   ];
 
   void handleMouseLeave(MouseEvent event) {
-    for (var item in items) {
+    for (var item in data) {
       item.isActive = false;
     }
     canvasTip.style.display = 'none';
@@ -109,7 +100,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
 
     if ((x > width - legendWidth) && (y > height - legendHeight)) {
       num ly = (y - (height - legendHeight));
-      for (var item in items) {
+      for (var item in data) {
         bool newIsActive = ly > 0 && ly < 20;
         if (item.isActive != newIsActive) {
           rerender = true;
@@ -126,7 +117,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
         currentAngle = currentAngle + (2 * pi);
       }
       double startingAngle = 0;
-      for (var item in items) {
+      for (var item in data) {
         var arcSize = degreesToRadians((item.weight / totalWeight) * 360);
         bool newIsActive = (startingAngle < currentAngle && (startingAngle + arcSize) > currentAngle);
         if (item.isActive != newIsActive) {
@@ -139,7 +130,7 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
         startingAngle += arcSize;
       }
     } else {
-      for (var item in items) {
+      for (var item in data) {
         if (item.isActive) {
           rerender = true;
         }
@@ -170,11 +161,12 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
   double totalWeight = 0;
   @override
   void render() {
+    updateData();
     var ctx = startRender();
     legendWidth = 0;
 
     ctx.font = legendFont;
-    items.map((item) => ctx.measureText(legendLabel(item)).width).forEach((a) {
+    data.map((item) => ctx.measureText(legendLabel(item)).width).forEach((a) {
       if (a > legendWidth) {
         legendWidth = a.ceil();
       }
@@ -182,26 +174,26 @@ class SwiftPieChart extends SwiftChart<List<PieChartItem>> {
     legendWidth += 30;
 
     double start = 0;
-    for (var i = 0; i < items.length; i++) {
-      if (!items[i].isActive) {
-        drawSegment(ctx, i, items[i], start);
+    for (var i = 0; i < data.length; i++) {
+      if (!data[i].isActive) {
+        drawSegment(ctx, i, data[i], start);
       }
-      start += items[i].weight;
+      start += data[i].weight;
     }
     //draw active items over inactive
     start = 0;
-    for (var i = 0; i < items.length; i++) {
-      if (items[i].isActive) {
-        drawSegment(ctx, i, items[i], start);
+    for (var i = 0; i < data.length; i++) {
+      if (data[i].isActive) {
+        drawSegment(ctx, i, data[i], start);
       }
-      start += items[i].weight;
+      start += data[i].weight;
     }
   }
 
   int get centerX => legend ? ((width - legendWidth) / 2).floor() : (width / 2).floor();
   int get centerY => (height / 2).floor();
 
-  int get legendHeight => 20 * items.length;
+  int get legendHeight => 20 * data.length;
   int legendWidth = 0;
 
   void drawSegment(CanvasRenderingContext2D ctx, int idx, PieChartItem item, double start) {

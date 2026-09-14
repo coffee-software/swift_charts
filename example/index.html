@@ -4,18 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Swift Charts Demo</title>
-    <script src="/example.dart.js" defer></script>
+    <script src="./example.dart.js" defer></script>
+    <style>
+        .chart {
+            background: #f5f6ff;
+            padding: 10px;
+            /*height: 400px;*/
+        }
+    </style>
 </head>
-<body>
+<body style="background: #eee;">
+    <div style="max-width: 1024px; margin: 0 auto; padding: 10px">
     <h1>Time Chart Example 1</h1>
-    <div id="timechart1"></div>
-    <h1>Time Chart Example 2</h1>
-    <div id="timechart2"></div>
-    <h1>Time Chart Example 3</h1>
-    <div id="timechart3"></div>
-    <h1>Pie Chart Example 1</h1>
-    <div id="piechart1"></div>
-    <h1>Pie Chart Example 2</h1>
-    <div id="piechart2"></div>
+        <div class="chart" id="timechart1"></div>
+        <h1>Time Chart Example 2</h1>
+        <div class="chart" id="timechart2"></div>
+        <h1>Time Chart Example 3</h1>
+        <div class="chart" id="timechart3"></div>
+        <h1>Pie Chart Example 1</h1>
+        <div class="chart" id="piechart1"></div>
+        <h1>Pie Chart Example 2</h1>
+        <div class="chart" id="piechart2"></div>
+    </div>
 </body>
 </html>

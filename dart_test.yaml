@@ -1,0 +1,8 @@
+define_platforms:
+  chromium:
+    name: Chromium
+    extends: chrome
+    settings:
+      executable: chromium
+      headless: true
+      arguments: --no-sandbox --disable-gpu --disable-dev-shm-usage

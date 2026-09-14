@@ -4,64 +4,240 @@ import 'dart:math';
 import 'swift_charts.dart';
 import 'package:web/web.dart';
 
-class TimeChartPoint {
-  int key;
-  int x;
-  int y;
-  String time;
-  String value;
-  bool active = false;
-  TimeChartPoint(this.key, this.x, this.y, this.time, this.value);
-}
-
 typedef TimeChartValueFormatter = String Function(num value);
 typedef TimeChartDateFormatter = String Function(DateTime date);
 
-/// Chart that renders datapoints indexed by milisecondsSinceEpoch
-class SwiftTimeChart extends SwiftChart<Map<int, num>> {
-  @override
-  Map<int, num> items = {};
-  List<TimeChartPoint> points = [];
-  HTMLDivElement canvasTip;
+sealed class TimeChartSeries {
+  String color;
 
-  HTMLDivElement container;
-  @override
-  HTMLCanvasElement canvas;
+  Map<int, num> data;
+  ChartScale? scale;
+  ChartTransform? transform;
+  num minValue = 0;
+  num maxValue = 0;
 
-  SwiftTimeChart(this.container)
-      : canvas = HTMLCanvasElement(),
-        canvasTip = HTMLDivElement() {
-    canvas.style.width = '100%';
-    canvas.style.height = '280px';
-    renderText('rendering...');
-    canvas.onMouseMove.listen(handleMouseMove);
-
-    container.innerHTML = ''.toJS;
-    container.style.position = 'relative';
-    container.append(canvas);
-    container.append(canvasTip);
-    canvasTip.style.position = 'absolute';
-    canvasTip.style.border = '1px solid gray';
-    canvasTip.style.background = 'white';
-    canvasTip.style.width = '100px';
-    canvasTip.style.height = '50px';
-    canvasTip.style.overflow = 'hidden';
-    canvasTip.style.fontSize = '10px';
-    canvasTip.style.padding = '5px';
-    canvasTip.style.display = 'none';
+  Iterable<({double x, double y, bool isActive})> transformedPoints(SwiftTimeChart chart) sync* {
+    for (var k in data.keys) {
+      final transformed = transform!.apply(k, data[k]!.toDouble());
+      yield (x: transformed.x, y: transformed.y, isActive: chart.currentTime == k);
+    }
   }
 
-  int valueStepsCount = 6;
-  int? currentActivePoint;
+  TimeChartSeries({required this.data, this.scale, this.color = '#000'});
 
   TimeChartValueFormatter? valueFormatter;
+  TimeChartValueFormatter? legendFormatter;
 
   String formatValue(num value) {
     if (valueFormatter != null) {
       return valueFormatter!(value);
     }
-    return value.toStringAsFixed(max(0, (-((log(magnitude) / ln10) - 1)).round()));
+    return value.toStringAsFixed(2);
+
+    //return value.toStringAsFixed(max(0, (-((log(magnitudes[i]) / ln10) - 1)).round()));
   }
+
+  String formatLegendValue(num value) {
+    if (legendFormatter != null) {
+      return legendFormatter!(value);
+    }
+    return formatValue(value);
+  }
+
+  //todo: remove
+  List<double> valueLabels = [];
+
+  int minSpread = 1;
+  String valueTitle = 'value';
+
+  void render(SwiftTimeChart chart, CanvasRenderingContext2D ctx);
+}
+
+class LineSeries extends TimeChartSeries {
+
+  String? shadowColor;
+  int lineWidth;
+  int pointRadius;
+
+  double smoothing;
+
+  LineSeries(
+      {required super.data,
+      super.scale,
+      super.color,
+      this.smoothing = 0.0,
+      this.lineWidth = 1,
+      this.pointRadius = 2,
+      this.shadowColor = '#0007'});
+
+  @override
+  void render(SwiftTimeChart chart, CanvasRenderingContext2D ctx) {
+//shadow!
+    if (shadowColor != null) {
+      ctx.beginPath();
+      ctx.fillStyle = shadowColor!.toJS;
+      ({double x, double y, bool isActive})? previous;
+      for (var point in transformedPoints(chart)) {
+        if (previous == null) {
+          ctx.moveTo(point.x, point.y);
+        } else {
+          if (smoothing > 0) {
+            Point cp1 = Point((previous.x + point.x) / 2, previous.y);
+            Point cp2 = Point((previous.x + point.x) / 2, point.y);
+            ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, point.x, point.y);
+          } else {
+            ctx.lineTo(point.x, point.y);
+          }
+        }
+        previous = point;
+      }
+      // close down to the baseline and back
+      ctx.lineTo(chart.leftMargin + chart.chartWidth, chart.topMargin + chart.chartHeight);
+      ctx.lineTo(chart.leftMargin, chart.topMargin + chart.chartHeight);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    ctx.beginPath();
+    ctx.strokeStyle = color.toJS;
+    ctx.fillStyle = color.toJS;
+    ctx.lineWidth = lineWidth;
+
+    ({double x, double y, bool isActive})? previous;
+    for (var point in transformedPoints(chart)) {
+      if (previous == null) {
+        ctx.moveTo(point.x, point.y);
+      } else {
+        if (smoothing > 0) {
+          Point cp1 = Point((previous.x + point.x) / 2, previous.y);
+          Point cp2 = Point((previous.x + point.x) / 2, point.y);
+
+          ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, point.x, point.y);
+        } else {
+          ctx.lineTo(point.x, point.y);
+        }
+      }
+      previous = point;
+    }
+    ctx.stroke();
+
+    for (var point in transformedPoints(chart)) {
+      ctx.beginPath();
+      if (point.isActive) {
+        ctx.arc(point.x, point.y, pointRadius * 2, 0, 2 * pi);
+      } else {
+        ctx.arc(point.x, point.y, pointRadius, 0, 2 * pi);
+      }
+      ctx.stroke();
+      ctx.fill();
+    }
+  }
+}
+
+class BarSeries extends TimeChartSeries {
+
+  String fillColor;
+  int lineWidth;
+  int barWidth;
+
+  BarSeries(
+      {required super.data,
+      super.scale,
+      super.color,
+      this.lineWidth = 1,
+      this.barWidth = 3,
+      this.fillColor = '#0007'});
+
+  @override
+  void render(SwiftTimeChart chart, CanvasRenderingContext2D ctx) {
+    ctx.strokeStyle = color.toJS;
+    ctx.lineWidth = lineWidth;
+    ctx.fillStyle = fillColor.toJS;
+    for (var point in transformedPoints(chart)) {
+      ctx.fillStyle = point.isActive ? color.toJS : fillColor.toJS;
+
+      int w = point.isActive ? barWidth : barWidth + 2;
+
+      if (chart.chartHeight + chart.topMargin > point.y) {
+        /*ctx.roundRect(point.x - (w / 2), point.y, w, chart.chartHeight + chart.topMargin - point.y);
+          CanvasRenderingContext2D.fill] or [CanvasRenderingContext2D.stroke*/
+
+        ctx.fillRect(point.x - (w / 2), point.y, w, chart.chartHeight + chart.topMargin - point.y);
+        ctx.strokeRect(point.x - (w / 2), point.y, w, chart.chartHeight + chart.topMargin - point.y);
+      }
+    }
+  }
+}
+
+/// pan/zoom transformation that will convert time and value into x y
+class ChartTransform {
+  final double sx, tx, sy, ty;
+  const ChartTransform({required this.sx, required this.tx, required this.sy, required this.ty});
+
+  factory ChartTransform.forScale({
+    required int minTime,
+    required int maxTime,
+    required int width,
+    required int leftMargin,
+    required double minValue,
+    required double maxValue,
+    required int height,
+    required int topMargin,
+  }) {
+    final sx = (width) / (maxTime - minTime);
+    final tx = leftMargin - sx * minTime;
+
+    final rawSy = (height) / (maxValue - minValue);
+    final sy = -rawSy;
+    final ty = height + topMargin + rawSy * minValue;
+
+    return ChartTransform(sx: sx, tx: tx, sy: sy, ty: ty);
+  }
+
+  ({double x, double y}) apply(int time, double value) => (x: sx * time + tx, y: sy * value + ty);
+}
+
+/// Chart that renders datapoints indexed by milisecondsSinceEpoch
+class SwiftTimeChart extends SwiftChart {
+  /// transformer for mouse moves
+  ChartTransform? mouseTransform;
+
+  Map<int, (String label, int time)> allTimeLabels = {};
+
+  int? currentTime;
+
+  HTMLDivElement container;
+  HTMLDivElement canvasTip;
+
+  @override
+  HTMLCanvasElement canvas;
+
+  List<TimeChartSeries> series;
+
+  //configurable display parameters
+  FontFace? font;
+  int fontSize = 9;
+
+  SwiftTimeChart({
+    required this.container,
+    required this.series,
+  })  : canvas = HTMLCanvasElement(),
+        canvasTip = HTMLDivElement() {
+    container.innerHTML = ''.toJS;
+    container.className += ' swift-chart time-chart';
+    container.append(canvas);
+    canvas.onMouseMove.listen(handleMouseMove);
+    container.append(canvasTip);
+    renderMessage('rendering...');
+    canvasTip.className = 'tooltip';
+    canvasTip.style.display = 'none';
+    SwiftChart.ensureStyles();
+    initObserver();
+    render();
+  }
+
+  //int valueStepsCount = 6;
+  //int? currentActivePoint;
 
   TimeChartDateFormatter? dateFormatter;
 
@@ -74,8 +250,8 @@ class SwiftTimeChart extends SwiftChart<Map<int, num>> {
 
   void onPointClick(void Function(int id) callback) {
     canvas.onClick.listen((e) {
-      if (currentActivePoint != null) {
-        callback(points[currentActivePoint!].key);
+      if (currentTime != null) {
+        callback(currentTime!);
       }
     });
   }
@@ -95,27 +271,63 @@ class SwiftTimeChart extends SwiftChart<Map<int, num>> {
     offsetX -= 50;
     offsetY -= 25;
     canvasTip.style.display = 'none';
-    int? activePoint;
-    for (var i = 0; i < points.length; i++) {
-      var dx = x - points[i].x;
-      var dy = y - points[i].y;
+    int? newCurrentTime;
+
+    //mouseTransform.apply(time, value);
+
+    /*for (var s in series) {
+      if (time != null) {
+        newCurrentTime = time;
+        canvasTip.style.left = "10px";  // TODO "${points[i].x + offsetX}px";
+        canvasTip.style.top = "0";//"${points[i].y + offsetY}px";
+        canvasTip.innerHTML = allTimeLabels[time]!.toJS;
+        if (showTip) {
+          canvasTip.style.display = 'block';
+        }
+        break;
+      }
+    } */
+    for (var tx in allTimeLabels.keys) {
+      //TODO 1 !!!!!!!!!!!: transform?
+
+      if ((x - tx) * (x - tx) < 100) {
+        //points[i].active = true;
+        //activePoint = i;
+        newCurrentTime = allTimeLabels[tx]!.$2;
+
+        canvasTip.style.left = "${tx + offsetX}px";
+        canvasTip.style.top = "${y + offsetY}px";
+        canvasTip.innerHTML = allTimeLabels[tx]!.$1.toJS;
+        if (showTip) {
+          canvasTip.style.display = 'block';
+        }
+      }
+
+      /*var dx = x - points[i].x;
+      var dy = 0;//y - points[i].y;
       points[i].active = false;
       if ((dx * dx) + (dy * dy) < 100) {
         points[i].active = true;
         activePoint = i;
         canvasTip.style.left = "${points[i].x + offsetX}px";
-        canvasTip.style.top = "${points[i].y + offsetY}px";
-        canvasTip.innerHTML = ('${points[i].time}<br/>${points[i].value}').toJS;
-        canvasTip.style.display = 'block';
-      }
+        canvasTip.style.top = "0";//"${points[i].y + offsetY}px";
+        canvasTip.innerHTML = points[i].label.toJS;
+        if (showTip) {
+          canvasTip.style.display = 'block';
+        }
+      }*/
     }
-    if (currentActivePoint != activePoint) {
-      currentActivePoint = activePoint;
+    if (newCurrentTime != currentTime) {
+      currentTime = newCurrentTime;
       renderPoints();
     }
   }
-
-  List<double> getValueLabels(num minValue, num maxValue) {
+/*
+  List<double> getValueLabels(num minValue, num maxValue, double magnitude) {
+    print('SCALING');
+    print(magnitude);
+    print(minValue);
+    print(maxValue);
     List<double> ret = [];
     for (var i = 0; i < valueStepsCount; i++) {
       var valueStep = maxValue - (((maxValue - minValue) * i) / (valueStepsCount - 1));
@@ -123,6 +335,7 @@ class SwiftTimeChart extends SwiftChart<Map<int, num>> {
     }
     return ret;
   }
+*/
 
   String forceTwoDigits(int i) {
     return (i < 10 ? '0$i' : i.toString());
@@ -185,7 +398,7 @@ class SwiftTimeChart extends SwiftChart<Map<int, num>> {
     while (magnitude < value) {
       magnitude *= 10;
     }
-    magnitude = magnitude / 100;
+    magnitude = magnitude / 10;
     return magnitude;
   }
 
@@ -193,53 +406,63 @@ class SwiftTimeChart extends SwiftChart<Map<int, num>> {
     return (ctx.measureText(text).width).round();
   }
 
-  String _lineColor = 'black';
-  void setLineColor(String color) {
-    _lineColor = color;
-  }
-
-  int _lineWidth = 2;
-  void setLineWidth(int width) {
-    _lineWidth = width;
-  }
-
-  int _pointSize = 4;
-  void setPointSize(int size) {
-    _pointSize = size;
-  }
-
   int smallMargin = 5;
-  int valueMargin = 0;
+
+  int rightMargin = 0;
+  int leftMargin = 0;
+
+  int topMargin = 0;
   int timeMargin = 0;
-  int textMargin = 4;
+  int textMargin = 10;
+
+  int chartWidth = 0;
+  int chartHeight = 0;
 
   int? minTime;
   int? maxTime;
 
-  List<double> valueLabels = [];
   Map<int, String> timeLabels = {};
 
-  double magnitude = 0.0;
+  //List<double> magnitudes = [];
+
+  bool showTimeScale = true;
+  bool showValueScale = true;
+  bool rotateTimeLabels = true;
+  bool showGrid = true;
+  bool showTip = true;
+
+  double? forcePadding;
+
+  /*Iterable<Point> pointsForChart(int i) {
+    return points.map((p) => Point(p.x, p.ys[i]));
+  }*/
 
   @override
   void render() {
     CanvasRenderingContext2D ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
+    /*if (chartTypes.length < numLines) {
+      chartTypes = List.filled(numLines, TimeChartTypeLine(2, 2, 'black', null));
+    }*/
     minTime = null;
     maxTime = null;
-    num? minValue;
-    num? maxValue;
-    for (var key in items.keys) {
-      var time = key;
-      var value = items[key]!;
-      minTime = (minTime == null ? time : min(minTime!, time));
-      maxTime = (maxTime == null ? time : max(maxTime!, time));
-      minValue = (minValue == null ? value : min(minValue, value));
-      maxValue = (maxValue == null ? value : max(maxValue, value));
+
+    for (var i = 0; i < series.length; i++) {
+      series[i].minValue = 0;
+      series[i].maxValue = 0;
+      for (var key in series[i].data.keys) {
+        var time = key;
+        minTime = (minTime == null ? time : min(minTime!, time));
+        maxTime = (maxTime == null ? time : max(maxTime!, time));
+
+        var value = series[i].data[key]!;
+        series[i].minValue = min(series[i].minValue, value);
+        series[i].maxValue = max(series[i].maxValue, value);
+      }
     }
 
     if (maxTime == null) {
-      renderText('no data');
+      renderMessage('no data');
       return;
     }
 
@@ -248,42 +471,108 @@ class SwiftTimeChart extends SwiftChart<Map<int, num>> {
       maxTime = maxTime! + 100;
     }
 
-    if (minValue! > 0) {
-      //TODO configurable start at 0
-      minValue = 0;
-    }
-    if (minValue == maxValue) {
-      maxValue = maxValue! + 1;
-    }
+    leftMargin = rightMargin = smallMargin;
 
-    magnitude = getMagnitude(maxValue!);
-    maxValue = ((maxValue / magnitude) * magnitude).ceilToDouble();
-    minValue = ((minValue / magnitude) * magnitude).floorToDouble();
+    //magnitudes = List.filled(numLines, 0);
+    for (var i = 0; i < series.length; i++) {
+      /*if (minValues[i] + minSpreads[i] > (maxValues[i] ?? 0)) {
+        maxValues[i] = maxValues[i]! + minSpreads[i];
+      }*/
 
-    valueLabels = getValueLabels(minValue, maxValue);
+      //valueLabels.add([]);
+      //magnitudes[i] = getMagnitude(maxValues[i]!);
 
-    valueMargin = 0;
-    for (var i = 0; i < valueLabels.length; i++) {
-      valueMargin = max(valueMargin, measureText(ctx, formatValue(valueLabels[i])) + (2 * textMargin));
+      series[i].scale ??= AutoScaler.compute(
+          dataMin: series[i].minValue,
+          dataMax: series[i].maxValue,
+          minLines: 2, //configurable??
+          maxLines: 3, //configurable??
+          forceZero: true, //configurable??
+          minSpan: series[i].minSpread.toDouble());
+
+      /*
+      maxValues[i] = (maxValues[i] / magnitudes[i]).ceil() * magnitudes[i];
+      minValues[i] = (minValues[i] / magnitudes[i]).floor() * magnitudes[i];
+       */
+      series[i].minValue = series[i].scale!.min;
+      series[i].maxValue = series[i].scale!.max;
+
+      if (forcePadding != null) {
+        series[i].minValue = series[i].minValue - (forcePadding! * (series[i].maxValue - series[i].minValue));
+        series[i].maxValue = series[i].maxValue + (forcePadding! * (series[i].maxValue - series[i].minValue));
+      }
+
+      if (showValueScale) {
+        series[i].valueLabels =
+            series[i].scale!.lines.reversed.toList(); //getValueLabels(minValues[i], maxValues[i], magnitudes[i]);
+        for (var j = 0; j < series[i].valueLabels.length; j++) {
+          if (i.isEven) {
+            leftMargin =
+                max(leftMargin, measureText(ctx, series[i].formatLegendValue(series[i].valueLabels[j])) + (2 * textMargin));
+          } else {
+            rightMargin =
+                max(rightMargin, measureText(ctx, series[i].formatLegendValue(series[i].valueLabels[j])) + (2 * textMargin));
+          }
+        }
+      }
     }
 
     timeMargin = 0;
-    timeLabels = getTimeLabels(minTime!, maxTime!);
-    for (var i in timeLabels.keys) {
-      timeMargin = max(timeMargin, measureText(ctx, timeLabels[i]!) + (2 * textMargin));
+    if (showTimeScale) {
+      timeLabels = getTimeLabels(minTime!, maxTime!);
+      //print(timeLabels);
+      if (rotateTimeLabels) {
+        for (var i in timeLabels.keys) {
+          timeMargin = max(timeMargin, measureText(ctx, timeLabels[i]!) + (2 * textMargin));
+        }
+      } else {
+        //TODO: configurable font size
+        timeMargin = textMargin + 14;
+      }
+      topMargin = smallMargin;
+    } else {
+      timeMargin = topMargin = smallMargin;
     }
 
-    points.clear();
-    for (var key in items.keys) {
-      var time = key;
-      var value = items[key]!;
+    mouseTransform = ChartTransform.forScale(
+        minTime: minTime!,
+        maxTime: maxTime!,
+        width: (width - leftMargin - rightMargin),
+        leftMargin: leftMargin,
+        minValue: 0.0,
+        maxValue: 1.0,
+        height: 1,
+        topMargin: 0);
+
+    for (var i = 0; i < series.length; i++) {
+      series[i].transform = ChartTransform.forScale(
+          minTime: minTime!,
+          maxTime: maxTime!,
+          width: (width - leftMargin - rightMargin),
+          leftMargin: leftMargin,
+          minValue: series[i].minValue.toDouble(),
+          maxValue: series[i].maxValue.toDouble(),
+          height: (height - timeMargin - topMargin),
+          topMargin: topMargin);
+    }
+
+    Set<int> allKeys = {};
+    for (var i = 0; i < series.length; i++) {
+      allKeys.addAll(series[i].data.keys);
+    }
+    var allKeysList = allKeys.toList();
+    allKeysList.sort();
+    for (var time in allKeysList) {
       var date = DateTime.fromMillisecondsSinceEpoch(time).toUtc();
-      points.add(TimeChartPoint(
-          key,
-          (((time - minTime!) / (maxTime! - minTime!)) * (width - valueMargin - smallMargin) + valueMargin).round(),
-          (height - (((value - minValue) / (maxValue - minValue)) * (height - timeMargin - smallMargin)) - timeMargin).round(),
-          formatTime(date),
-          'value: ${formatValue(items[key]!)}'));
+      String legend = '<div>${formatTime(date)}</div>';
+      for (var i = 0; i < series.length; i++) {
+        final value = series[i].data[time];
+        if (value != null) {
+          legend +=
+          '<div>${series[i].valueTitle}: <strong style="color:${series[i].color}">${series[i].formatValue(value)}</strong></div>';
+        }
+      }
+      allTimeLabels[mouseTransform!.apply(time, 0).x.round()] = (legend, time);
     }
     //RENDER POINTS
     renderPoints();
@@ -291,73 +580,82 @@ class SwiftTimeChart extends SwiftChart<Map<int, num>> {
 
   void renderPoints() {
     var ctx = startRender();
-    ctx.fillStyle = 'black'.toJS;
-    ctx.font = '8pt Arial';
+
+    if (font != null) {
+      //TODO: wait on load and reload
+      //font.load().then(() => {});
+      ctx.font = '${font!.style} ${font!.weight} ${fontSize}px ${font!.family}';
+    } else {
+      ctx.font = '${fontSize}px Arial';
+    }
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = '#ddd'.toJS;
-    var chartWidth = width - smallMargin - valueMargin;
-    var chartHeight = height - timeMargin - smallMargin;
-    ctx.strokeRect(valueMargin, smallMargin, chartWidth, chartHeight);
+    ctx.strokeStyle = '#e5e5e5'.toJS;
+    chartWidth = width - rightMargin - leftMargin;
+    chartHeight = height - timeMargin - topMargin;
+    if (showGrid) {
+      ctx.strokeRect(leftMargin, topMargin, chartWidth, chartHeight);
+    }
 
-    ctx.strokeStyle = 'black'.toJS;
     ctx.save();
-    ctx.textAlign = "right";
     ctx.textBaseline = "middle";
-    var valueStepWidth = (height - timeMargin - smallMargin) / (valueLabels.length - 1);
-    for (var i = 0; i < valueLabels.length; i++) {
-      ctx.strokeStyle = '#ccc'.toJS;
-      ctx.beginPath();
-      ctx.moveTo(valueMargin, smallMargin + (i * valueStepWidth));
-      ctx.lineTo(width - smallMargin, smallMargin + (i * valueStepWidth));
-      ctx.stroke();
-      ctx.fillText(formatValue(valueLabels[i]), valueMargin - textMargin, smallMargin + (i * valueStepWidth));
+
+    //print('RENDERING LABELS');
+    //print(valueLabels);
+    //print(numLines);
+    for (var j = 0; j < series.length; j++) {
+      var valueStepWidth = (height - timeMargin - topMargin) / (series[j].valueLabels.length - 1);
+      for (var i = 0; i < series[j].valueLabels.length; i++) {
+        ctx.strokeStyle = '#e5e5e5'.toJS;
+        ctx.beginPath();
+        ctx.moveTo(leftMargin, topMargin + (i * valueStepWidth));
+        ctx.lineTo(width - rightMargin, topMargin + (i * valueStepWidth));
+        ctx.stroke();
+        //ctx.fillStyle;
+
+        ctx.fillStyle = series[j].color.toJS;
+        if (j.isEven) {
+          ctx.textAlign = "right";
+          ctx.fillText(
+              series[j].formatLegendValue(series[j].valueLabels[i]), leftMargin - textMargin, topMargin + (i * valueStepWidth));
+        } else {
+          ctx.textAlign = "left";
+          ctx.fillText(series[j].formatLegendValue(series[j].valueLabels[i]), leftMargin + chartWidth + textMargin,
+              topMargin + (i * valueStepWidth));
+        }
+      }
     }
 
-    ctx.translate(valueMargin, height - timeMargin);
-    ctx.rotate(-pi / 2);
-    ctx.textAlign = "right";
-    ctx.textBaseline = "middle";
-    for (var time in timeLabels.keys) {
-      ctx.save();
-      ctx.translate(0, chartWidth * ((time - minTime!) / (maxTime! - minTime!)));
-      ctx.strokeStyle = '#ccc'.toJS;
-      ctx.beginPath();
-      ctx.moveTo(0, 0);
-      ctx.lineTo(chartHeight, 0);
-      ctx.stroke();
-      ctx.fillText(timeLabels[time]!, -textMargin, 0);
+    ctx.fillStyle = '#555'.toJS;
+
+    if (rotateTimeLabels) {
+      ctx.translate(leftMargin, height - timeMargin);
+      ctx.rotate(-pi / 2);
+      ctx.textAlign = "right";
+      ctx.textBaseline = "middle";
+      for (var time in timeLabels.keys) {
+        ctx.save();
+        ctx.translate(0, chartWidth * ((time - minTime!) / (maxTime! - minTime!)));
+        ctx.strokeStyle = '#e5e5e5'.toJS;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(chartHeight, 0);
+        ctx.stroke();
+        ctx.fillText(timeLabels[time]!, -textMargin, 0);
+        ctx.restore();
+      }
       ctx.restore();
-    }
-    ctx.restore();
-
-    bool first = true;
-    ctx.beginPath();
-    ctx.strokeStyle = _lineColor.toJS;
-    ctx.fillStyle = _lineColor.toJS;
-    ctx.lineWidth = _lineWidth;
-
-    for (int i = 0; i < points.length; i++) {
-      if (first) {
-        ctx.moveTo(points[i].x, points[i].y);
-        first = false;
-      } else {
-        Point cp1 = Point((points[i - 1].x + points[i].x) / 2, points[i - 1].y);
-        Point cp2 = Point((points[i - 1].x + points[i].x) / 2, points[i].y);
-        ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, points[i].x, points[i].y);
-        //ctx.lineTo(points[i].x, points[i].y);
+    } else {
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      for (var time in timeLabels.keys) {
+        ctx.fillText(timeLabels[time]!, leftMargin + (chartWidth * ((time - minTime!) / (maxTime! - minTime!))),
+            topMargin + chartHeight + textMargin);
       }
     }
-    ctx.stroke();
-    for (int i = 0; i < points.length; i++) {
-      ctx.beginPath();
-      if (points[i].active) {
-        ctx.arc(points[i].x, points[i].y, _pointSize, 0, 2 * pi);
-      } else {
-        ctx.arc(points[i].x, points[i].y, _pointSize / 2, 0, 2 * pi);
-      }
-      ctx.stroke();
-      ctx.fill();
+
+    for (var j = 0; j < series.length; j++) {
+      series[j].render(this, ctx);
     }
   }
 }

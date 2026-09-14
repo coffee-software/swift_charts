@@ -1,3 +1,10 @@
+# 2.0.0
+
+add multiple line and bar charts featre for TimeCharts
+
+api is backward incompatible
+
+
 # 1.2.0
 
 migrate from dart:html to package:web
