@@ -3,14 +3,45 @@ import 'dart:math' as math;
 /// scale position on the rendered chart
 enum ChartScalePosition { left, right }
 
+typedef TimeChartValueFormatter = String Function(num value);
+
 /// chart Y axis scale
 class ChartScale {
   final ChartScalePosition position;
   final double min;
   final double max;
   final List<double> lines;
+  final String textColor;
 
-  const ChartScale({required this.position, required this.min, required this.max, required this.lines});
+
+  final TimeChartValueFormatter? valueFormatter;
+  final TimeChartValueFormatter? legendFormatter;
+
+  String formatValue(num value) {
+    if (valueFormatter != null) {
+      return valueFormatter!(value);
+    }
+    return value.toStringAsFixed(2);
+
+    //return value.toStringAsFixed(max(0, (-((log(magnitudes[i]) / ln10) - 1)).round()));
+  }
+
+  String formatLegendValue(num value) {
+    if (legendFormatter != null) {
+      return legendFormatter!(value);
+    }
+    return formatValue(value);
+  }
+
+  const ChartScale({
+    required this.position,
+    required this.min,
+    required this.max,
+    required this.lines,
+    this.textColor = '#333',
+    this.valueFormatter,
+    this.legendFormatter
+  });
 
   static ChartScale byStep(
       {required ChartScalePosition position, required double min, required double max, required double step}) {
@@ -78,9 +109,9 @@ class AutoScaler {
   ///   zero first for same-sign data, symmetrically otherwise). 0
   ///   disables this.
   static ChartScale compute({
-    required ChartScalePosition position,
     required num dataMin,
     required num dataMax,
+    ChartScalePosition position = ChartScalePosition.left,
     int minLines = 4,
     int maxLines = 7,
     bool forceZero = false,

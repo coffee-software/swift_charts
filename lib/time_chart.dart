@@ -1,4 +1,5 @@
 import 'dart:js_interop';
+import 'dart:js_interop_unsafe';
 import 'dart:math';
 import 'dart:async';
 
@@ -8,7 +9,6 @@ import 'chart_colors.dart';
 import 'swift_charts.dart';
 import 'package:web/web.dart';
 
-typedef TimeChartValueFormatter = String Function(num value);
 typedef TimeChartDateFormatter = String Function(DateTime date);
 
 enum TimeChartDateDisplay {
@@ -26,7 +26,6 @@ enum IntervalAlignment {
 sealed class TimeChartSeries {
   late String color;
 
-  ChartScalePosition? scalePosition;
   ChartScale? scale;
   ChartTransform? transform;
   num minValue = 0;
@@ -68,40 +67,15 @@ sealed class TimeChartSeries {
   TimeChartSeries({
     required Map<int, num> data,
     this.scale,
-    this.scalePosition,
     String? color,
     this.interval,
     this.alignment,
-    this.valueTitle = 'value',
-    this.valueFormatter,
-    this.legendFormatter
+    this.valueTitle = 'value'
   }) {
     this.color = color ?? ColorGenerator.nextColor();
 // wire the wrapper's callback to route through our own notify hook
     _data = ObservableMap(Map.of(data), () => _notify?.call());
   }
-
-  TimeChartValueFormatter? valueFormatter;
-  TimeChartValueFormatter? legendFormatter;
-
-  String formatValue(num value) {
-    if (valueFormatter != null) {
-      return valueFormatter!(value);
-    }
-    return value.toStringAsFixed(2);
-
-    //return value.toStringAsFixed(max(0, (-((log(magnitudes[i]) / ln10) - 1)).round()));
-  }
-
-  String formatLegendValue(num value) {
-    if (legendFormatter != null) {
-      return legendFormatter!(value);
-    }
-    return formatValue(value);
-  }
-
-  //todo: remove
-  List<double> valueLabels = [];
 
   int minSpread = 1;
   String valueTitle;
@@ -125,9 +99,6 @@ class LineSeries extends TimeChartSeries {
       super.interval,
       super.alignment,
       super.valueTitle = 'value',
-      super.valueFormatter,
-      super.legendFormatter,
-      super.scalePosition,
       this.smoothing = 0.0,
       this.lineWidth = 1,
       this.pointRadius = 2,
@@ -158,8 +129,8 @@ class LineSeries extends TimeChartSeries {
         previous = point;
       }
       // close down to the baseline and back
-      ctx.lineTo(chart.leftMargin + chart.chartWidth, chart.topMargin + chart.chartHeight);
-      ctx.lineTo(chart.leftMargin, chart.topMargin + chart.chartHeight);
+      ctx.lineTo(chart._leftMargin + chart.chartWidth, chart._topMargin + chart.chartHeight);
+      ctx.lineTo(chart._leftMargin, chart._topMargin + chart.chartHeight);
       ctx.closePath();
       ctx.fill();
     }
@@ -219,9 +190,6 @@ class BarSeries extends TimeChartSeries {
       super.interval,
       super.alignment,
       super.valueTitle = 'value',
-      super.valueFormatter,
-      super.legendFormatter,
-      super.scalePosition,
       this.hoverColor,
       this.strokeColor = '#0007',
       this.strokeWidth = 0,
@@ -244,20 +212,20 @@ class BarSeries extends TimeChartSeries {
       double w = point.isActive ? width + 2 : width;
       final offset = (barIndex * w) - ((w * numBars) / 2);
 
-      if (chart.chartHeight + chart.topMargin > point.y) {
+      if (chart.chartHeight + chart._topMargin > point.y) {
         /*ctx.roundRect(point.x - (w / 2), point.y, w, chart.chartHeight + chart.topMargin - point.y);
           CanvasRenderingContext2D.fill] or [CanvasRenderingContext2D.stroke*/
 
-        if (true /*ctx.hasProperty('roundRect'.toJS)*/) {
+        if (ctx.hasProperty('roundRect'.toJS).toDart) {
           ctx.beginPath();
-          ctx.roundRect(point.x + offset, point.y, w, chart.chartHeight + chart.topMargin - point.y, <JSAny?>[borderRadius.toJS, borderRadius.toJS, 0.toJS, 0.toJS].toJS);
+          ctx.roundRect(point.x + offset, point.y, w, chart.chartHeight + chart._topMargin - point.y, <JSAny?>[borderRadius.toJS, borderRadius.toJS, 0.toJS, 0.toJS].toJS);
           ctx.fill();
           if (strokeWidth > 0) {
             ctx.stroke();
           }
         } else {
           //old safari fallback
-          ctx.fillRect(point.x + offset, point.y, w, chart.chartHeight + chart.topMargin - point.y);
+          ctx.fillRect(point.x + offset, point.y, w, chart.chartHeight + chart._topMargin - point.y);
         }
         //ctx.strokeRect(point.x + offset, point.y, w, chart.chartHeight + chart.topMargin - point.y);
       }
@@ -421,9 +389,15 @@ class SwiftTimeChart extends SwiftChart {
 
   //configurable display parameters
   FontFace? font;
-  int fontSize = 10;
+  int fontSize;
+  String textColor;
 
-  int smallMargin;
+  /// fixed margin on chart sides
+  int margin;
+
+  /// extra pixel spacing around text
+  int textMargin;
+
   TimeChartDateFormatter? dateFormatter;
   String gridColor;
 
@@ -439,8 +413,12 @@ class SwiftTimeChart extends SwiftChart {
   SwiftTimeChart({
     required this.container,
     required this.series,
+    this.font,
+    this.fontSize = 10,
+    this.textColor = '#333',
     this.dateDisplay = TimeChartDateDisplay.local,
-    this.smallMargin = 5,
+    this.margin = 5,
+    this.textMargin = 10,
     this.dateFormatter,
     this.gridColor = '#e5e5e5',
     this.showGrid = true,
@@ -528,7 +506,7 @@ class SwiftTimeChart extends SwiftChart {
     int? newCurrentTime;
     double? minDistance;
     String? label;
-    if (x > leftMargin && x < leftMargin + chartWidth && y > topMargin && y < topMargin + chartHeight) {
+    if (x > _leftMargin && x < _leftMargin + chartWidth && y > _topMargin && y < _topMargin + chartHeight) {
       for (var tx in xToTime.keys) {
         var thisDistance = (x - tx).abs();
         if (minDistance == null || minDistance > thisDistance) {
@@ -665,12 +643,14 @@ class SwiftTimeChart extends SwiftChart {
   }
 
 
-  int rightMargin = 0;
-  int leftMargin = 0;
+  Set<ChartScale> allScales = {};
 
-  int topMargin = 0;
-  int timeMargin = 0;
-  int textMargin = 10;
+  int _rightMargin = 0;
+  int _leftMargin = 0;
+  List<int> scaleMargins = [];
+
+  int _topMargin = 0;
+  int _bottomMargin = 0;
 
   int chartWidth = 0;
   int chartHeight = 0;
@@ -697,6 +677,8 @@ class SwiftTimeChart extends SwiftChart {
     }*/
     minTime = null;
     maxTime = null;
+    num minValue = 0;
+    num maxValue = 0;
 
     int? minDiff;
     int numBars = 0;
@@ -713,6 +695,8 @@ class SwiftTimeChart extends SwiftChart {
         var value = series[i].data[key]!;
         series[i].minValue = min(series[i].minValue, value);
         series[i].maxValue = max(series[i].maxValue, value);
+        minValue = min(minValue, value);
+        maxValue = max(maxValue, value);
         if (prevKey != null && (minDiff == null || key - prevKey < minDiff)) {
           minDiff = key - prevKey;
         }
@@ -751,27 +735,39 @@ class SwiftTimeChart extends SwiftChart {
       maxTime = maxTime! + 100;
     }
 
-    leftMargin = rightMargin = smallMargin;
+    _leftMargin = _rightMargin = margin;
 
     //magnitudes = List.filled(numLines, 0);
     bool positionLeft = true;
+
+    allScales.clear();
+
+    var defaultScale = AutoScaler.compute(
+        position: ChartScalePosition.left,
+        dataMin: minValue,
+        dataMax: maxValue,
+        minLines: 2, //configurable??
+        maxLines: 3, //configurable??
+        forceZero: true, //configurable??
+        minSpan: 1.0
+    );
+
     for (var i = 0; i < series.length; i++) {
       /*if (minValues[i] + minSpreads[i] > (maxValues[i] ?? 0)) {
         maxValues[i] = maxValues[i]! + minSpreads[i];
       }*/
 
-      //valueLabels.add([]);
       //magnitudes[i] = getMagnitude(maxValues[i]!);
 
-      series[i].scalePosition ??= positionLeft ? ChartScalePosition.left : ChartScalePosition.right;
-      series[i].scale ??= AutoScaler.compute(
-          position: series[i].scalePosition!,
+      series[i].scale ??= defaultScale;
+      /*AutoScaler.compute(
+          position: positionLeft ? ChartScalePosition.left : ChartScalePosition.right,
           dataMin: series[i].minValue,
           dataMax: series[i].maxValue,
           minLines: 2, //configurable??
           maxLines: 3, //configurable??
           forceZero: true, //configurable??
-          minSpan: series[i].minSpread.toDouble());
+          minSpan: series[i].minSpread.toDouble());*/
 
       positionLeft = !positionLeft;
 
@@ -787,37 +783,42 @@ class SwiftTimeChart extends SwiftChart {
         series[i].maxValue = series[i].maxValue + (forcePadding! * (series[i].maxValue - series[i].minValue));
       }
 
-      if (showValueScale) {
-        series[i].valueLabels =
-            series[i].scale!.lines.reversed.toList(); //getValueLabels(minValues[i], maxValues[i], magnitudes[i]);
-        for (var j = 0; j < series[i].valueLabels.length; j++) {
-          if (series[i].scalePosition! == ChartScalePosition.left) {
-            leftMargin =
-                max(leftMargin, measureText(ctx, series[i].formatLegendValue(series[i].valueLabels[j])) + (2 * textMargin));
-          } else {
-            rightMargin =
-                max(rightMargin, measureText(ctx, series[i].formatLegendValue(series[i].valueLabels[j])) + (2 * textMargin));
-          }
+      allScales.add(series[i].scale!);
+    }
+
+    if (showValueScale) {
+      scaleMargins.clear();
+      for (var scale in allScales) {
+        var maxLength = 0;
+        for (var j = 0; j < scale.lines.length; j++) {
+          maxLength = max(maxLength, measureText(ctx, scale.formatLegendValue(scale.lines[j])));
         }
+        maxLength += textMargin;
+        if (scale.position == ChartScalePosition.left) {
+          _leftMargin += maxLength;
+        } else {
+          _rightMargin += maxLength;
+        }
+        scaleMargins.add(maxLength);
       }
     }
 
-    timeMargin = 0;
     if (showTimeScale) {
       timeLabels = getTimeLabels(minTime!, maxTime!);
       if (rotateTimeLabels) {
+        _bottomMargin = 0;
         for (var i in timeLabels.keys) {
-          timeMargin = max(timeMargin, measureText(ctx, timeLabels[i]!) + (2 * textMargin));
+          _bottomMargin = max(_bottomMargin, measureText(ctx, timeLabels[i]!));
         }
+        _bottomMargin += margin + textMargin;
       } else {
         //TODO: configurable font size
-        timeMargin = textMargin + 14;
+        _bottomMargin = margin + textMargin + fontSize;
       }
-      topMargin = smallMargin;
     } else {
-      timeMargin = topMargin = smallMargin;
+      _bottomMargin = margin;
     }
-
+    _topMargin = margin + (showValueScale ? (fontSize / 2).round() : 0);
 
     Set<int> allKeys = {};
     for (var i = 0; i < series.length; i++) {
@@ -839,7 +840,7 @@ class SwiftTimeChart extends SwiftChart {
         final value = series[i].data[time];
         if (value != null) {
           legend +=
-          '<div>${series[i].valueTitle}: <strong style="color:${series[i].color}">${series[i].formatValue(value)}</strong></div>';
+          '<div>${series[i].valueTitle}: <strong style="color:${series[i].color}">${series[i].scale!.formatValue(value)}</strong></div>';
         }
       }
       timeTooltips[time] = legend;
@@ -850,26 +851,32 @@ class SwiftTimeChart extends SwiftChart {
 
   void renderPoints() {
     var ctx = startRender();
+
+    chartWidth = width - _rightMargin - _leftMargin;
+    chartHeight = height - _bottomMargin - _topMargin;
+
     mouseTransform = ChartTransform.forScale(
         minTime: minTime!,
         maxTime: maxTime!,
-        width: (width - leftMargin - rightMargin),
-        leftMargin: leftMargin,
+        width: chartWidth,
+        leftMargin: _leftMargin,
         minValue: 0.0,
         maxValue: 1.0,
         height: 1,
-        topMargin: 0);
+        topMargin: 0
+    );
 
     for (var i = 0; i < series.length; i++) {
       series[i].transform = ChartTransform.forScale(
           minTime: minTime!,
           maxTime: maxTime!,
-          width: (width - leftMargin - rightMargin),
-          leftMargin: leftMargin,
+          width: chartWidth,
+          leftMargin: _leftMargin,
           minValue: series[i].minValue.toDouble(),
           maxValue: series[i].maxValue.toDouble(),
-          height: (height - timeMargin - topMargin),
-          topMargin: topMargin);
+          height: chartHeight,
+          topMargin: _topMargin
+      );
     }
 
     xToTime.clear();
@@ -889,47 +896,64 @@ class SwiftTimeChart extends SwiftChart {
     ctx.strokeStyle = gridColor.toJS;
     ctx.fillStyle = gridColor.toJS;
 
-    chartWidth = width - rightMargin - leftMargin;
-    chartHeight = height - timeMargin - topMargin;
     if (showGrid) {
-      ctx.strokeRect(leftMargin, topMargin, chartWidth, chartHeight);
+      ctx.strokeRect(_leftMargin, _topMargin, chartWidth, chartHeight);
     }
     if (highlightCurrentInterval && interval != null && currentTime != null && mouseTransform != null) {
       final hX1 = mouseTransform!.apply((currentTime! - (interval!.inMilliseconds / 2)).round(), 0).x;
       final hX2 = mouseTransform!.apply((currentTime! + (interval!.inMilliseconds / 2)).round(), 0).x;
-      ctx.fillRect(hX1, topMargin, hX2 - hX1, chartHeight);
+      ctx.fillRect(hX1, _topMargin, hX2 - hX1, chartHeight);
     }
 
     ctx.save();
     ctx.textBaseline = "middle";
-    for (var j = 0; j < series.length; j++) {
-      var valueStepWidth = (height - timeMargin - topMargin) / (series[j].valueLabels.length - 1);
-      for (var i = 0; i < series[j].valueLabels.length; i++) {
-        ctx.strokeStyle = '#e5e5e5'.toJS;
+    int marginIdx = 0;
+    var leftScaleX = _leftMargin - textMargin;
+    var rightScaleX = _leftMargin + chartWidth + textMargin;
+
+    for (var scale in allScales) {
+      var valueStepWidth = chartHeight / (scale.lines.length - 1);
+      int i = 0;
+      for (var line in scale.lines) {
+        var y = _topMargin + chartHeight - (i * valueStepWidth);
+        ctx.strokeStyle = gridColor.toJS;
         ctx.beginPath();
-        ctx.moveTo(leftMargin, topMargin + (i * valueStepWidth));
-        ctx.lineTo(width - rightMargin, topMargin + (i * valueStepWidth));
+        ctx.moveTo(_leftMargin, y);
+        ctx.lineTo(width - _rightMargin, y);
         ctx.stroke();
         //ctx.fillStyle;
 
-        ctx.fillStyle = series[j].color.toJS;
-        if (series[j].scalePosition == ChartScalePosition.left) {
+        ctx.fillStyle = 'black'.toJS; //series[j].color.toJS;
+
+        if (scale.position == ChartScalePosition.left) {
           ctx.textAlign = "right";
           ctx.fillText(
-              series[j].formatLegendValue(series[j].valueLabels[i]), leftMargin - textMargin, topMargin + (i * valueStepWidth));
+              scale.formatLegendValue(line),
+              leftScaleX,
+              y
+          );
         } else {
           ctx.textAlign = "left";
-          ctx.fillText(series[j].formatLegendValue(series[j].valueLabels[i]), leftMargin + chartWidth + textMargin,
-              topMargin + (i * valueStepWidth));
+          ctx.fillText(scale.formatLegendValue(line),
+              rightScaleX,
+              y
+          );
         }
+        i++;
+      }
+
+      if (scale.position == ChartScalePosition.left) {
+        leftScaleX -= scaleMargins[marginIdx++];
+      } else {
+        rightScaleX += scaleMargins[marginIdx++];
       }
     }
 
-    ctx.fillStyle = '#555'.toJS;
+    ctx.fillStyle = textColor.toJS;
     ctx.strokeStyle = gridColor.toJS;
 
     if (rotateTimeLabels) {
-      ctx.translate(leftMargin, height - timeMargin);
+      ctx.translate(_leftMargin, height - _bottomMargin);
       ctx.rotate(-pi / 2);
       ctx.textAlign = "right";
       ctx.textBaseline = "middle";
@@ -948,14 +972,14 @@ class SwiftTimeChart extends SwiftChart {
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
       for (var time in timeLabels.keys) {
-        final left = leftMargin + (chartWidth * ((time - minTime!) / (maxTime! - minTime!)));
+        final left = _leftMargin + (chartWidth * ((time - minTime!) / (maxTime! - minTime!)));
 
         ctx.beginPath();
-        ctx.moveTo(left, topMargin);
-        ctx.lineTo(left, topMargin + chartHeight);
+        ctx.moveTo(left, _topMargin);
+        ctx.lineTo(left, _topMargin + chartHeight);
         ctx.stroke();
 
-        ctx.fillText(timeLabels[time]!, left, topMargin + chartHeight + textMargin);
+        ctx.fillText(timeLabels[time]!, left, _topMargin + chartHeight + textMargin);
       }
     }
 

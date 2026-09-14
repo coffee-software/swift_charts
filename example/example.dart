@@ -73,21 +73,21 @@ void main() {
         container: document.getElementById('piechart1') as HTMLDivElement,
         legend: true,
         data: [
-          PieChartItem('w 12', 12, color: 'red'),
-          PieChartItem('w 24', 24, color: 'green'),
-          PieChartItem('w 123', 123, color: 'blue'),
-          PieChartItem('w 35', 35, color: 'orange'),
+          PieChartItem('red', 12, color: 'red'),
+          PieChartItem('green', 24, color: 'green'),
+          PieChartItem('blue', 123, color: 'blue'),
+          PieChartItem('orange', 35, color: 'orange'),
         ]
     ),
 
     SwiftPieChart(
         container: document.getElementById('piechart2') as HTMLDivElement,
         data: [
-          PieChartItem('20 %', 20),
-          PieChartItem('25 %', 25),
-          PieChartItem('15 %', 15),
-          PieChartItem('30 %', 30),
-          PieChartItem('10 %', 10),
+          PieChartItem('item 1', 20),
+          PieChartItem('item 2', 25),
+          PieChartItem('item 3', 15),
+          PieChartItem('item 4', 30),
+          PieChartItem('item 5', 10),
         ]
     ),
 
@@ -95,11 +95,12 @@ void main() {
         container: document.getElementById('piechart3') as HTMLDivElement,
         legend: true,
         data: [
-          PieChartItem('20 %', 20),
-          PieChartItem('25 %', 25),
-          PieChartItem('15 %', 15),
-          PieChartItem('30 %', 30),
-          PieChartItem('10 %', 10),
+          PieChartItem('foo', 20),
+          PieChartItem('bar', 30),
+          PieChartItem('faz', 15),
+          PieChartItem('baz', 15),
+          PieChartItem('boo', 10),
+          PieChartItem('foo', 10),
         ]
     )
   ];
@@ -139,10 +140,15 @@ void main() {
     BarSeries(scale: rightScale, data: generateRandomDataPoints(8)),
   ]);
 
-  SwiftTimeChart(container: document.getElementById('timechart3') as HTMLDivElement, series: [
-    LineSeries(data: dataPoints1, color: '#f55', shadowColor: '#f554', smoothing: 1.0, lineWidth: 3, pointRadius: 5),
-    LineSeries(data: dataPoints2, color: '#55f', shadowColor: '#55f4', smoothing: 1.0, lineWidth: 3, pointRadius: 5),
-    LineSeries(data: dataPoints3, color: '#5f5', shadowColor: '#5f54', smoothing: 1.0, lineWidth: 3, pointRadius: 5),
-  ]);
+  SwiftTimeChart(
+      container: document.getElementById('timechart3') as HTMLDivElement,
+      series: [
+        LineSeries(data: dataPoints1, color: '#f55', shadowColor: '#f554', smoothing: 1.0, lineWidth: 3, pointRadius: 5),
+        LineSeries(data: dataPoints2, color: '#55f', shadowColor: '#55f4', smoothing: 1.0, lineWidth: 3, pointRadius: 5),
+        LineSeries(data: dataPoints3, color: '#5f5', shadowColor: '#5f54', smoothing: 1.0, lineWidth: 3, pointRadius: 5),
+      ],
+      fontSize: 13,
+      rotateTimeLabels: false
+  );
 
 }
