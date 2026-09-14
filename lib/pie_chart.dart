@@ -1,20 +1,35 @@
 import 'dart:js_interop';
 import 'dart:math';
+import 'dart:async';
 
 import 'swift_charts.dart';
+import 'chart_colors.dart';
 import 'package:web/web.dart';
 
 class PieChartItem {
   String label;
   String shortLabel;
-  double weight;
-  String? color;
+
+  late String color;
   bool isActive = false;
   static int maxLabelLength = 14;
   String? description;
 
-  PieChartItem(this.label, this.weight, {this.color})
-      : shortLabel = (label.length > maxLabelLength) ? '${label.substring(0, maxLabelLength - 2)}..' : label;
+  /// Set by the chart when this data is attached
+  void Function()? _notify;
+
+  num _weight;
+  num get weight => _weight;
+
+  set weight(num value) {
+    _weight = value;
+    _notify?.call();
+  }
+
+  PieChartItem(this.label, num weight, {String? color})
+      : _weight = weight, shortLabel = (label.length > maxLabelLength) ? '${label.substring(0, maxLabelLength - 2)}..' : label {
+    this.color = color ?? ColorGenerator.nextColor();
+  }
 }
 
 /// Simple PieChart
@@ -39,7 +54,7 @@ class SwiftPieChart extends SwiftChart {
       data.add(PieChartItem('other..', leftWeight)
         ..description = lefts.map((i) => '${(100 * i.weight / totalWeight).toStringAsFixed(2)}% ${i.label}').join('<br/>'));
     }
-    var c = 0;
+    /*var c = 0;
     for (var i = 0; i < data.length; i++) {
       if (i == data.length - 1 && c == 0) {
         //make sure last color is different than first
@@ -50,26 +65,47 @@ class SwiftPieChart extends SwiftChart {
       if (c >= _colors.length) {
         c = 0;
       }
-    }
+    }*/
   }
 
-  SwiftPieChart({required this.container, required this.data, this.legend = false})
+  SwiftPieChart({
+    required this.container,
+    required this.data,
+    this.legend = false
+  })
       : canvas = HTMLCanvasElement(),
         canvasTip = HTMLDivElement() {
     container.innerHTML = ''.toJS;
     container.append(canvas);
     canvas.onMouseMove.listen(handleMouseMove);
-    canvas.onMouseLeave.listen(handleMouseLeave);
+    container.onMouseLeave.listen(handleMouseLeave);
     renderMessage('rendering...');
     container.append(canvasTip);
     container.className += ' swift-chart time-chart';
     canvasTip.className = 'tooltip';
     canvasTip.style.display = 'none';
+
+    for (final d in data) {
+      d._notify = _scheduleRender;
+    }
+
     SwiftChart.ensureStyles();
     initObserver();
     render();
   }
 
+  bool _renderScheduled = false;
+
+  void _scheduleRender() {
+    if (_renderScheduled) return;
+    _renderScheduled = true;
+    scheduleMicrotask(() {
+      _renderScheduled = false;
+      render();
+    });
+  }
+
+/*
   List<String> _colors = [
     '#c472e8',
     '#ff8d72',
@@ -79,7 +115,7 @@ class SwiftPieChart extends SwiftChart {
     '#ffc940',
     '#ff7692',
     '#ffe640',
-  ];
+  ];*/
 
   void handleMouseLeave(MouseEvent event) {
     for (var item in data) {
@@ -93,11 +129,27 @@ class SwiftPieChart extends SwiftChart {
     var rect = (event.target as Element).getBoundingClientRect();
     var x = event.clientX - rect.left; //x position within the element.
     var y = event.clientY - rect.top; //y position within the element.
+    final offset = 35;
+
+    if (x > rect.width / 2) {
+      canvasTip.style.left = "auto";
+      canvasTip.style.right = "${rect.width - x + offset}px";
+    } else {
+      canvasTip.style.left = "${x + offset}px";
+      canvasTip.style.right = "auto";
+    }
+    if (y > rect.height / 2) {
+      canvasTip.style.bottom = "${rect.height - y + offset}px";
+      canvasTip.style.top = "auto";
+    } else {
+      canvasTip.style.bottom = "auto";
+      canvasTip.style.top = "${y + offset}px";
+    }
 
     var rerender = false;
     PieChartItem? currentItem;
     var radius = (min(width, height) / 2) * 0.9;
-
+    //TODO: copy placement from line chart!
     if ((x > width - legendWidth) && (y > height - legendHeight)) {
       num ly = (y - (height - legendHeight));
       for (var item in data) {
@@ -142,23 +194,25 @@ class SwiftPieChart extends SwiftChart {
             .toJS;
     canvasTip.style.display = currentItem != null ? 'block' : 'none';
 
-    canvasTip.style.right = (x < width / 2) ? '0' : 'auto';
-    canvasTip.style.left = (x >= width / 2) ? '0' : 'auto';
-    canvasTip.style.bottom = (y < height / 2) ? '0' : 'auto';
-    canvasTip.style.top = (y >= height / 2) ? '0' : 'auto';
+    //canvasTip.style.right = (x < width / 2) ? '0' : 'auto';
+    //canvasTip.style.left = (x >= width / 2) ? '0' : 'auto';
+    //canvasTip.style.bottom = (y < height / 2) ? '0' : 'auto';
+    //canvasTip.style.top = (y >= height / 2) ? '0' : 'auto';
 
     if (rerender) {
       render();
     }
   }
 
+  /*
   void setColors(List<String> colors) {
     _colors = colors;
-  }
+  }*/
 
   String get legendFont => "10pt Helvetica";
 
-  double totalWeight = 0;
+  num totalWeight = 0.0;
+
   @override
   void render() {
     updateData();
@@ -199,7 +253,7 @@ class SwiftPieChart extends SwiftChart {
   void drawSegment(CanvasRenderingContext2D ctx, int idx, PieChartItem item, double start) {
     ctx.save();
 
-    var radius = (min(width, height) / 2) * (item.isActive ? 0.88 : 0.82);
+    var radius = min(centerX, centerY) * (item.isActive ? 0.88 : 0.82);
     var startingAngle = degreesToRadians((start / totalWeight) * 360 - 90.0) - (item.isActive ? 0.03 : 0);
     var arcSize = degreesToRadians((item.weight / totalWeight) * 360) + (item.isActive ? 0.06 : 0);
     var endingAngle = startingAngle + arcSize;
@@ -230,7 +284,7 @@ class SwiftPieChart extends SwiftChart {
 
     ctx.translate(centerX, centerY);
     ctx.rotate(angle);
-    var dx = (min(width, height) * 0.5).floor() * 0.8 - 5;
+    var dx = (min(centerX, centerY)).floor() * 0.8 - 5;
     var dy = (height * 0.05).floor();
 
     ctx.textAlign = "right";

@@ -6,51 +6,137 @@ import 'package:swift_charts/swift_charts.dart';
 void main() {
   var random = Random();
 
-  Map<int, num> dataPoints1 = {
-    1695168000000: random.nextDouble() * 300,
-    1695254400000: random.nextDouble() * 300,
-    1695340800000: random.nextDouble() * 300,
-    1695370000000: random.nextDouble() * 300,
-    1695427200000: random.nextDouble() * 300,
-    1695513600000: random.nextDouble() * 300,
-    1695600000000: random.nextDouble() * 300,
-    1695686400000: random.nextDouble() * 300,
-  };
+  //TODO
+  int millisAt(int y, int m, int d) {
+    // Poland 2026: CET (UTC+1) until Mar 29 01:00 UTC, then CEST (UTC+2)
+    // until Oct 25 01:00 UTC, then back to CET.
+    final utcMidnight = DateTime.utc(y, m, d);
+    final isCEST = utcMidnight.isAfter(DateTime.utc(2026, 3, 29, 1)) &&
+        utcMidnight.isBefore(DateTime.utc(2026, 10, 25, 1));
+    final offsetHours = isCEST ? 2 : 1;
+    return utcMidnight.subtract(Duration(hours: offsetHours)).millisecondsSinceEpoch;
+  }
 
-  Map<int, num> dataPoints2 = {
-    1695168000000: random.nextDouble() * 100,
-    1695254400000: random.nextDouble() * 100,
-    1695340800000: random.nextDouble() * 100,
-    1695513600000: random.nextDouble() * 100,
-    1695600000000: random.nextDouble() * 100,
-    1695686400000: random.nextDouble() * 100,
-  };
+  Map<int, num> generateRandomDataPoints(int length, {num min = 0.0, num max= 100.0}) {
+    Map<int, num> ret = {};
+    var startDate = DateTime.parse('2026-10-24');
+    for (int i=0; i<length; i++) {
+      ret[startDate.millisecondsSinceEpoch] = (random.nextDouble() * (max - min)) + min;
+      startDate = startDate.add(Duration(days:1));
+    }
+    return ret;
+  }
 
-  Map<int, num> dataPoints3 = {
-    1695168000000: random.nextDouble() * 300,
-    1695254400000: random.nextDouble() * 300,
-    1695340800000: random.nextDouble() * 300,
-    1695370000000: random.nextDouble() * 300,
-    1695427200000: random.nextDouble() * 300,
-    1695513600000: random.nextDouble() * 300,
-    1695600000000: random.nextDouble() * 300,
-    1695686400000: random.nextDouble() * 300,
-  };
+  Map<int, num> smallSet = generateRandomDataPoints(4);
 
-  SwiftTimeChart(container: document.getElementById('timechart1') as HTMLDivElement, series: [
-    LineSeries(data: dataPoints1),
-    LineSeries(data: dataPoints2),
-    LineSeries(data: dataPoints3),
+
+  Map<int, num> dataPoints1 = generateRandomDataPoints(8);
+  Map<int, num> dataPoints2 = generateRandomDataPoints(8);
+  Map<int, num> dataPoints3 = generateRandomDataPoints(8);
+
+  var timeChart = SwiftTimeChart(
+      container: document.getElementById('timechart') as HTMLDivElement,
+      series: [
+        LineSeries(
+          data: dataPoints1,
+          smoothing: 1.0
+        ),
+        LineSeries(
+            data: dataPoints2,
+            smoothing: 1.0
+        ),
+        LineSeries(
+            data: dataPoints3,
+            smoothing: 1.0
+        ),
+      ]
+  );
+  document.getElementById('timechartReload')!.onClick.listen((e){
+    timeChart.series.forEach((series){
+      series.data = generateRandomDataPoints(8);
+    });
+  });
+
+  var barChart =SwiftTimeChart(container: document.getElementById('barchart') as HTMLDivElement, series: [
+    BarSeries(data: dataPoints1),
+    BarSeries(data: dataPoints2),
+    BarSeries(data: dataPoints3),
   ]);
+  document.getElementById('barchartReload')!.onClick.listen((e){
+    barChart.series.forEach((series){
+      series.data = generateRandomDataPoints(8);
+    });
+  });
+
+  List<SwiftPieChart> pieCharts = [
+    SwiftPieChart(
+        container: document.getElementById('piechart1') as HTMLDivElement,
+        legend: true,
+        data: [
+          PieChartItem('w 12', 12, color: 'red'),
+          PieChartItem('w 24', 24, color: 'green'),
+          PieChartItem('w 123', 123, color: 'blue'),
+          PieChartItem('w 35', 35, color: 'orange'),
+        ]
+    ),
+
+    SwiftPieChart(
+        container: document.getElementById('piechart2') as HTMLDivElement,
+        data: [
+          PieChartItem('20 %', 20),
+          PieChartItem('25 %', 25),
+          PieChartItem('15 %', 15),
+          PieChartItem('30 %', 30),
+          PieChartItem('10 %', 10),
+        ]
+    ),
+
+    SwiftPieChart(
+        container: document.getElementById('piechart3') as HTMLDivElement,
+        legend: true,
+        data: [
+          PieChartItem('20 %', 20),
+          PieChartItem('25 %', 25),
+          PieChartItem('15 %', 15),
+          PieChartItem('30 %', 30),
+          PieChartItem('10 %', 10),
+        ]
+    )
+  ];
+  document.getElementById('piechartsReload')!.onClick.listen((e){
+    pieCharts.forEach((pieChart) {
+      pieChart.data.forEach((data){
+        data.weight = random.nextInt(20) + 1;
+      });
+    });
+  });
+
+  SwiftTimeChart(
+      container: document.getElementById('tzchart1') as HTMLDivElement,
+      series: [LineSeries(data: smallSet)],
+      dateDisplay: TimeChartDateDisplay.local
+  );
+  SwiftTimeChart(
+      container: document.getElementById('tzchart2') as HTMLDivElement,
+      series: [LineSeries(data: smallSet)],
+      dateDisplay: TimeChartDateDisplay.utc
+  );
+  SwiftTimeChart(container: document.getElementById('tzchart3') as HTMLDivElement,
+      series: [LineSeries(data: smallSet)],
+      dateDisplay: TimeChartDateDisplay.both
+  );
+
+
 
   //chart with a custom scale
-  var leftScale = ChartScale(position: ChartScalePosition.left, min: 0, max: 100, lines: [0, 20, 50, 100]);
+  var leftScale = ChartScale(position: ChartScalePosition.left, min: 0, max: 400, lines: [0, 200, 400]);
   var rightScale = ChartScale.byStep(position: ChartScalePosition.right, min: 0, max: 100, step: 25);
 
   SwiftTimeChart(container: document.getElementById('timechart2') as HTMLDivElement, series: [
     LineSeries(scale: leftScale, data: dataPoints1, smoothing: 1.0),
     LineSeries(scale: rightScale, data: dataPoints2, smoothing: 1.0),
     BarSeries(scale: rightScale, data: dataPoints3),
+    BarSeries(scale: rightScale, data: generateRandomDataPoints(8)),
   ]);
 
   SwiftTimeChart(container: document.getElementById('timechart3') as HTMLDivElement, series: [
@@ -59,18 +145,4 @@ void main() {
     LineSeries(data: dataPoints3, color: '#5f5', shadowColor: '#5f54', smoothing: 1.0, lineWidth: 3, pointRadius: 5),
   ]);
 
-  SwiftPieChart(container: document.getElementById('piechart1') as HTMLDivElement, data: [
-    PieChartItem('w 12', 12, color: 'red'),
-    PieChartItem('w 24', 24, color: 'green'),
-    PieChartItem('w 123', 123, color: 'blue'),
-    PieChartItem('w 35', 35, color: 'orange'),
-  ]);
-
-  SwiftPieChart(container: document.getElementById('piechart2') as HTMLDivElement, data: [
-    PieChartItem('20 %', 20),
-    PieChartItem('25 %', 25),
-    PieChartItem('15 %', 15),
-    PieChartItem('30 %', 30),
-    PieChartItem('10 %', 10),
-  ]);
 }

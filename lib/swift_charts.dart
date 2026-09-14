@@ -14,6 +14,8 @@ class _ChartStyles {
 }
 :where(.swift-chart canvas) {
   width: 100%;
+  height: 100%;
+  display: block;
 }
 :where(.swift-chart .tooltip) {
   position: absolute;
@@ -55,7 +57,6 @@ abstract class SwiftChart {
 
   void initObserver() {
     _resizeObserver = ResizeObserver(((JSArray entries, ResizeObserver observer) {
-      print('resize');
       render();
     }).toJS);
     _resizeObserver!.observe(canvas);
@@ -76,13 +77,10 @@ abstract class SwiftChart {
   CanvasRenderingContext2D startRender() {
     CanvasRenderingContext2D ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
     final rect = canvas.getBoundingClientRect();
-    print("XX: ${rect.width} ${rect.height}");
-    print(StackTrace.current);
     if (rect.width != 0 && rect.height != 0) {
       canvas.width = (rect.width * window.devicePixelRatio).round();
       canvas.height = (rect.height * window.devicePixelRatio).round();
     }
-    print('start render $width, $height');
     ctx.clearRect(0, 0, width, height);
     return ctx;
   }

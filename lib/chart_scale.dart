@@ -78,6 +78,7 @@ class AutoScaler {
   ///   zero first for same-sign data, symmetrically otherwise). 0
   ///   disables this.
   static ChartScale compute({
+    required ChartScalePosition position,
     required num dataMin,
     required num dataMax,
     int minLines = 4,
@@ -118,7 +119,7 @@ class AutoScaler {
     final niceMin = (min / step).floor() * step;
     final niceMax = (max / step).ceil() * step;
 
-    return ChartScale.byStep(position: ChartScalePosition.left, min: niceMin, max: niceMax, step: step);
+    return ChartScale.byStep(position: position, min: niceMin, max: niceMax, step: step);
   }
 
   /// Widens [min]..[max] to at least [minSpan]. Same-sign ranges are
