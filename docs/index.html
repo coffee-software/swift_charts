@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Swift Charts Demo</title>
+    <script src="./example.dart.js" defer></script>
+    <style>
+        .chart {
+            background: #f5f6ff;
+            padding: 10px;
+            height: 300px;
+            flex: 1;
+        }
+    </style>
+</head>
+<body style="background: #eee;">
+    <div style="max-width: 1024px; margin: 0 auto; padding: 10px">
+        <h1>Simple Time Chart <button id="timechartReload">↺</button></h1>
+        <div class="chart" id="timechart"></div>
+        <h1>Simple Bar Chart <button id="barchartReload">↺</button></h1>
+        <div class="chart" id="barchart"></div>
+        <h1>Pie Charts <button id="piechartsReload">↺</button></h1>
+        <div style="display: flex;">
+            <div class="chart" id="piechart1"></div>
+            <div class="chart" id="piechart2"></div>
+            <div class="chart" id="piechart3"></div>
+        </div>
+        <h1>Time Zone Display Settings</h1>
+        <div style="display: flex;">
+            <div class="chart" id="tzchart1"></div>
+            <div class="chart" id="tzchart2"></div>
+            <div class="chart" id="tzchart3"></div>
+        </div>
+        <h1>Mixed Time Chart</h1>
+        <div class="chart" id="timechart2"></div>
+        <h1>Time Chart Example 3</h1>
+        <div class="chart" id="timechart3"></div>
+    </div>
+</body>
+</html>

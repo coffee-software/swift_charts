@@ -9,6 +9,8 @@ build/
 # If you're building an application, you may want to check-in your pubspec.lock
 pubspec.lock
 
+docs/example.dart.js.deps
+docs/example.dart.js.map
 # Directory created by dartdoc
 # If you don't generate documentation locally you can remove this line.
 doc/api/
