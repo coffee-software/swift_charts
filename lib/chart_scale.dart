@@ -8,10 +8,10 @@ typedef TimeChartValueFormatter = String Function(num value);
 /// chart Y axis scale
 class ChartScale {
   final ChartScalePosition position;
-  final double min;
-  final double max;
-  final List<double> lines;
   final String textColor;
+  double? min;
+  double? max;
+  List<double> lines;
 
   final TimeChartValueFormatter? valueFormatter;
   final TimeChartValueFormatter? legendFormatter;
@@ -32,34 +32,30 @@ class ChartScale {
     return formatValue(value);
   }
 
-  const ChartScale(
-      {required this.position,
-      required this.min,
-      required this.max,
-      required this.lines,
-      this.textColor = '#333',
-      this.valueFormatter,
-      this.legendFormatter});
+  ChartScale({
+    required this.position,
+    this.textColor = '#333',
+    this.valueFormatter,
+    this.legendFormatter,
+    this.min,
+    this.max,
+    this.lines = const [],
+  });
 
-  static ChartScale byStep(
-      {required ChartScalePosition position, required double min, required double max, required double step}) {
+  void setLinesByStep(double step) {
     // Round away float dust (e.g. 0.30000000000000004), keyed off the
     // step's own precision.
     final decimals = math.max(0, -((math.log(step) / math.ln10).floor()) + 6);
     final factor = math.pow(10, decimals.clamp(0, 10)).toDouble();
     double clean(double v) => (v * factor).round() / factor;
 
-    final sections = ((max - min) / step).round();
-    final lines = <double>[
-      for (var i = 0; i <= sections; i++) clean(min + step * i),
+    final sections = ((max! - min!) / step).round();
+    lines = <double>[
+      for (var i = 0; i <= sections; i++) clean(min! + step * i),
     ];
 
-    return ChartScale(
-      position: position,
-      min: clean(min),
-      max: clean(max),
-      lines: lines,
-    );
+    min = clean(min!);
+    max = clean(max!);
   }
 
   @override
@@ -106,10 +102,10 @@ class AutoScaler {
   ///   If the data range is narrower than this, it's widened (toward
   ///   zero first for same-sign data, symmetrically otherwise). 0
   ///   disables this.
-  static ChartScale compute({
+  static void autoFit(
+    ChartScale scale, {
     required num dataMin,
     required num dataMax,
-    ChartScalePosition position = ChartScalePosition.left,
     int minLines = 4,
     int maxLines = 7,
     bool forceZero = false,
@@ -148,7 +144,9 @@ class AutoScaler {
     final niceMin = (min / step).floor() * step;
     final niceMax = (max / step).ceil() * step;
 
-    return ChartScale.byStep(position: position, min: niceMin, max: niceMax, step: step);
+    scale.min = niceMin;
+    scale.max = niceMax;
+    scale.setLinesByStep(step);
   }
 
   /// Widens [min]..[max] to at least [minSpan]. Same-sign ranges are

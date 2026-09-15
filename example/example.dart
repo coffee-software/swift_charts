@@ -90,7 +90,8 @@ void main() {
 
   //chart with a custom scale
   var leftScale = ChartScale(position: ChartScalePosition.left, min: 0, max: 400, lines: [0, 200, 400]);
-  var rightScale = ChartScale.byStep(position: ChartScalePosition.right, min: 0, max: 100, step: 25);
+  var rightScale = ChartScale(position: ChartScalePosition.right, min: 0, max: 100);
+  rightScale.setLinesByStep(25);
 
   SwiftTimeChart(container: document.getElementById('timechart2') as HTMLDivElement, series: [
     BarSeries(scale: rightScale, data: dataPoints3),

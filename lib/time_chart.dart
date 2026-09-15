@@ -615,15 +615,6 @@ class SwiftTimeChart extends SwiftChart {
     return ret;
   }
 
-  static double getMagnitude(num value) {
-    var magnitude = 0.001;
-    while (magnitude < value) {
-      magnitude *= 10;
-    }
-    magnitude = magnitude / 10;
-    return magnitude;
-  }
-
   int measureText(CanvasRenderingContext2D ctx, String text) {
     return (ctx.measureText(text).width).round();
   }
@@ -710,35 +701,30 @@ class SwiftTimeChart extends SwiftChart {
 
     _leftMargin = _rightMargin = margin;
 
-    //magnitudes = List.filled(numLines, 0);
     bool positionLeft = true;
 
     allScales.clear();
 
-    var defaultScale = AutoScaler.compute(
-        position: ChartScalePosition.left,
-        dataMin: minValue,
-        dataMax: maxValue,
-        minLines: 2, //configurable??
-        maxLines: 3, //configurable??
-        forceZero: true, //configurable??
-        minSpan: 1.0);
+    var defaultScale = ChartScale(position: ChartScalePosition.left);
+    AutoScaler.autoFit(defaultScale,
+        dataMin: minValue, dataMax: maxValue, minLines: 2, maxLines: 3, forceZero: true, minSpan: 1.0);
 
     for (var i = 0; i < series.length; i++) {
       series[i].scale ??= defaultScale;
-      /*AutoScaler.compute(
-          position: positionLeft ? ChartScalePosition.left : ChartScalePosition.right,
-          dataMin: series[i].minValue,
-          dataMax: series[i].maxValue,
-          minLines: 2, //configurable??
-          maxLines: 3, //configurable??
-          forceZero: true, //configurable??
-          minSpan: series[i].minSpread.toDouble());*/
+      if (series[i].scale!.min == null || series[i].scale!.max == null) {
+        AutoScaler.autoFit(series[i].scale!,
+            dataMin: series[i].minValue,
+            dataMax: series[i].maxValue,
+            minLines: 2,
+            maxLines: 3,
+            forceZero: true,
+            minSpan: series[i].minSpread.toDouble());
+      }
 
       positionLeft = !positionLeft;
 
-      series[i].minValue = series[i].scale!.min;
-      series[i].maxValue = series[i].scale!.max;
+      series[i].minValue = series[i].scale!.min!;
+      series[i].maxValue = series[i].scale!.max!;
 
       if (forcePadding != null) {
         series[i].minValue = series[i].minValue - (forcePadding! * (series[i].maxValue - series[i].minValue));
@@ -869,34 +855,36 @@ class SwiftTimeChart extends SwiftChart {
     var leftScaleX = _leftMargin - textMargin;
     var rightScaleX = _leftMargin + chartWidth + textMargin;
 
-    for (var scale in allScales) {
-      var valueStepWidth = chartHeight / (scale.lines.length - 1);
-      int i = 0;
-      for (var line in scale.lines) {
-        var y = _topMargin + chartHeight - (i * valueStepWidth);
-        ctx.strokeStyle = gridColor.toJS;
-        ctx.beginPath();
-        ctx.moveTo(_leftMargin, y);
-        ctx.lineTo(width - _rightMargin, y);
-        ctx.stroke();
-        //ctx.fillStyle;
+    if (showValueScale) {
+      for (var scale in allScales) {
+        var valueStepWidth = chartHeight / (scale.lines.length - 1);
+        int i = 0;
+        for (var line in scale.lines) {
+          var y = _topMargin + chartHeight - (i * valueStepWidth);
+          ctx.strokeStyle = gridColor.toJS;
+          ctx.beginPath();
+          ctx.moveTo(_leftMargin, y);
+          ctx.lineTo(width - _rightMargin, y);
+          ctx.stroke();
+          //ctx.fillStyle;
 
-        ctx.fillStyle = 'black'.toJS; //series[j].color.toJS;
+          ctx.fillStyle = 'black'.toJS; //series[j].color.toJS;
+
+          if (scale.position == ChartScalePosition.left) {
+            ctx.textAlign = "right";
+            ctx.fillText(scale.formatLegendValue(line), leftScaleX, y);
+          } else {
+            ctx.textAlign = "left";
+            ctx.fillText(scale.formatLegendValue(line), rightScaleX, y);
+          }
+          i++;
+        }
 
         if (scale.position == ChartScalePosition.left) {
-          ctx.textAlign = "right";
-          ctx.fillText(scale.formatLegendValue(line), leftScaleX, y);
+          leftScaleX -= scaleMargins[marginIdx++];
         } else {
-          ctx.textAlign = "left";
-          ctx.fillText(scale.formatLegendValue(line), rightScaleX, y);
+          rightScaleX += scaleMargins[marginIdx++];
         }
-        i++;
-      }
-
-      if (scale.position == ChartScalePosition.left) {
-        leftScaleX -= scaleMargins[marginIdx++];
-      } else {
-        rightScaleX += scaleMargins[marginIdx++];
       }
     }
 
