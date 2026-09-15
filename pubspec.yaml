@@ -1,6 +1,6 @@
 name: swift_charts
 description: Simple charts using package:web and canvas.
-version: 1.2.0
+version: 2.0.0
 homepage: https://github.com/coffee-software/swift_charts
 environment:
   sdk: ^3.4.0
