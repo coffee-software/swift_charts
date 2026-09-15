@@ -1,3 +1,7 @@
+# 2.0.1
+
+fix auto scaler for easier customisation
+
 # 2.0.0
 
 add multiple line and bar charts feature for TimeCharts
