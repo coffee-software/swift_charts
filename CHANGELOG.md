@@ -1,9 +1,12 @@
 # 2.0.0
 
-add multiple line and bar charts featre for TimeCharts
+add multiple line and bar charts feature for TimeCharts
 
-api is backward incompatible
+changed charts api to setter based
 
+added display customization options
+
+api is not backward compatible with previous versions
 
 # 1.2.0
 

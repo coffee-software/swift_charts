@@ -64,7 +64,7 @@ void main() {
       PieChartItem('faz', 15),
       PieChartItem('baz', 15),
       PieChartItem('boo', 10),
-      PieChartItem('foo', 10),
+      PieChartItem('far', 10),
     ])
   ];
   document.getElementById('piechartsReload')!.onClick.listen((e) {
@@ -93,10 +93,10 @@ void main() {
   var rightScale = ChartScale.byStep(position: ChartScalePosition.right, min: 0, max: 100, step: 25);
 
   SwiftTimeChart(container: document.getElementById('timechart2') as HTMLDivElement, series: [
-    LineSeries(scale: leftScale, data: dataPoints1, smoothing: 1.0),
-    LineSeries(scale: rightScale, data: dataPoints2, smoothing: 1.0),
     BarSeries(scale: rightScale, data: dataPoints3),
     BarSeries(scale: rightScale, data: generateRandomDataPoints(8)),
+    LineSeries(scale: leftScale, data: dataPoints1, smoothing: 1.0),
+    LineSeries(scale: rightScale, data: dataPoints2, smoothing: 1.0),
   ]);
 
   SwiftTimeChart(

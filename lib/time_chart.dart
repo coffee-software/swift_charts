@@ -99,7 +99,11 @@ class LineSeries extends TimeChartSeries {
       ctx.beginPath();
       ctx.fillStyle = shadowColor!.toJS;
       ({double x, double y, bool isActive})? previous;
+      double? firstX, lastX;
+
       for (var point in transformedPoints(chart)) {
+        firstX ??= point.x;
+        lastX = point.x;
         if (previous == null) {
           ctx.moveTo(point.x, point.y);
         } else {
@@ -114,8 +118,10 @@ class LineSeries extends TimeChartSeries {
         previous = point;
       }
       // close down to the baseline and back
-      ctx.lineTo(chart._leftMargin + chart.chartWidth, chart._topMargin + chart.chartHeight);
-      ctx.lineTo(chart._leftMargin, chart._topMargin + chart.chartHeight);
+      if (lastX != null && firstX != null) {
+        ctx.lineTo(lastX, chart._topMargin + chart.chartHeight);
+        ctx.lineTo(firstX, chart._topMargin + chart.chartHeight);
+      }
       ctx.closePath();
       ctx.fill();
     }
@@ -188,7 +194,7 @@ class BarSeries extends TimeChartSeries {
     ctx.fillStyle = color.toJS;
 
     final maxWidth = transform!.apply(interval!.inMilliseconds, 0).x - transform!.apply(0, 0).x;
-    final width = (barWidth ?? (0.65 / numBars)) * maxWidth;
+    final width = (barWidth ?? (0.6 / numBars)) * maxWidth;
 
     for (var point in transformedPoints(chart)) {
       ctx.fillStyle = point.isActive ? (hoverColor ?? color).toJS : color.toJS;
@@ -688,8 +694,8 @@ class SwiftTimeChart extends SwiftChart {
 
     if (numBars > 0) {
       //make sure bar charts will fit nicely in the chart
-      minTime = (minTime! - (interval!.inMilliseconds / 2)).round();
-      maxTime = (maxTime! + (interval!.inMilliseconds / 2)).round();
+      minTime = (minTime! - (interval!.inMilliseconds * 0.4)).round();
+      maxTime = (maxTime! + (interval!.inMilliseconds * 0.4)).round();
     }
 
     if (maxTime == null) {
