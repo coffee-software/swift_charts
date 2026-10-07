@@ -57,7 +57,13 @@ sealed class TimeChartSeries {
   }
 
   TimeChartSeries(
-      {required Map<int, num> data, this.scale, String? color, this.interval, this.alignment, this.minSpread = 1, this.valueTitle = 'value'}) {
+      {required Map<int, num> data,
+      this.scale,
+      String? color,
+      this.interval,
+      this.alignment,
+      this.minSpread = 1,
+      this.valueTitle = 'value'}) {
     this.color = color ?? ColorGenerator.nextColor();
     // wire the wrapper's callback to route through our own notify hook
     _data = ObservableMap(Map.of(data), () => _notify?.call());
@@ -208,13 +214,8 @@ class BarSeries extends TimeChartSeries {
       if (chart.chartHeight + chart._topMargin > point.y) {
         if (ctx.hasProperty('roundRect'.toJS).toDart) {
           ctx.beginPath();
-          ctx.roundRect(
-              point.x + offset,
-              point.y,
-              w,
-              (zeroY - point.y),
-              <JSAny?>[borderRadius.toJS, borderRadius.toJS, 0.toJS, 0.toJS].toJS
-          );
+          ctx.roundRect(point.x + offset, point.y, w, (zeroY - point.y),
+              <JSAny?>[borderRadius.toJS, borderRadius.toJS, 0.toJS, 0.toJS].toJS);
           ctx.fill();
           if (strokeWidth > 0) {
             ctx.stroke();
@@ -705,7 +706,6 @@ class SwiftTimeChart extends SwiftChart {
       renderMessage('no data');
       return;
     }
-
 
     _leftMargin = _rightMargin = margin;
 

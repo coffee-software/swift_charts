@@ -1,6 +1,6 @@
 name: swift_charts
 description: Render simple charts using package:web and canvas. Supports auto scaling and smoothing.
-version: 2.0.1
+version: 2.0.2
 homepage: https://github.com/coffee-software/swift_charts
 repository: https://github.com/coffee-software/swift_charts
 environment:

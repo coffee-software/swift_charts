@@ -1,3 +1,7 @@
+# 2.0.2
+
+fix for empty pie chart and single element time chart
+
 # 2.0.1
 
 fix auto scaler for easier customisation
