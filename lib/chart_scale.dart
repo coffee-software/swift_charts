@@ -119,6 +119,12 @@ class AutoScaler {
     var min = dataMin.toDouble();
     var max = dataMax.toDouble();
 
+    if (minSpan > 0) {
+      final result = _applyMinSpan(min, max, minSpan);
+      min = result.$1;
+      max = result.$2;
+    }
+
     // Degenerate case: no data range at all (a single point, or every
     // value identical). There's no objectively "correct" answer, so we
     // fall back to a small nominal span centered on the value.
@@ -126,12 +132,6 @@ class AutoScaler {
       final nominalRange = max == 0 ? 1.0 : max.abs();
       min -= nominalRange / 2;
       max += nominalRange / 2;
-    }
-
-    if (minSpan > 0) {
-      final result = _applyMinSpan(min, max, minSpan);
-      min = result.$1;
-      max = result.$2;
     }
 
     if (forceZero) {
@@ -156,7 +156,6 @@ class AutoScaler {
     final span = max - min;
     if (span >= minSpan) return (min, max);
     final deficit = minSpan - span;
-
     if (min >= 0 && max >= 0) {
       final pushDown = math.min(deficit, min);
       return (min - pushDown, max + (deficit - pushDown));

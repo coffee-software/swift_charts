@@ -49,8 +49,7 @@ SwiftTimeChart(
 );
 ```
 
-![Pie Charts](docs/timechart.png)
-
+![Time Chart](https://raw.githubusercontent.com/coffee-software/swift_charts/main/docs/timechart.png)
 
 ### Pie Charts
 
@@ -71,8 +70,7 @@ SwiftPieChart(
 );
 ```
 
-![Pie Charts](docs/piechart.png)
-
+![Pie Chart](https://raw.githubusercontent.com/coffee-software/swift_charts/main/docs/piechart.png)
 
 ## usage details
 

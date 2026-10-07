@@ -48,7 +48,7 @@ class SwiftPieChart extends SwiftChart {
 
   void _updateData() {
     data.sort((a, b) => -a.weight.compareTo(b.weight));
-    totalWeight = data.map((item) => item.weight).reduce((a, b) => a + b);
+    totalWeight = data.isEmpty ? 0 : data.map((item) => item.weight).reduce((a, b) => a + b);
     if (data.length > maxLabels) {
       var lefts = data.sublist(maxLabels - 1);
       data = data.sublist(0, maxLabels - 1);
@@ -179,7 +179,14 @@ class SwiftPieChart extends SwiftChart {
   @override
   void render() {
     _updateData();
+
+    if (data.isEmpty) {
+      renderMessage('no data');
+      return;
+    }
+
     var ctx = startRender();
+
     legendWidth = 0;
 
     ctx.font = legendFont;

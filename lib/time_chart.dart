@@ -57,13 +57,13 @@ sealed class TimeChartSeries {
   }
 
   TimeChartSeries(
-      {required Map<int, num> data, this.scale, String? color, this.interval, this.alignment, this.valueTitle = 'value'}) {
+      {required Map<int, num> data, this.scale, String? color, this.interval, this.alignment, this.minSpread = 1, this.valueTitle = 'value'}) {
     this.color = color ?? ColorGenerator.nextColor();
     // wire the wrapper's callback to route through our own notify hook
     _data = ObservableMap(Map.of(data), () => _notify?.call());
   }
 
-  int minSpread = 1;
+  int minSpread;
   String valueTitle;
 
   void render(SwiftTimeChart chart, CanvasRenderingContext2D ctx);
@@ -83,6 +83,7 @@ class LineSeries extends TimeChartSeries {
       super.color,
       super.interval,
       super.alignment,
+      super.minSpread = 1,
       super.valueTitle = 'value',
       this.smoothing = 0.0,
       this.lineWidth = 1,
@@ -100,7 +101,6 @@ class LineSeries extends TimeChartSeries {
       ctx.fillStyle = shadowColor!.toJS;
       ({double x, double y, bool isActive})? previous;
       double? firstX, lastX;
-
       for (var point in transformedPoints(chart)) {
         firstX ??= point.x;
         lastX = point.x;
@@ -179,6 +179,7 @@ class BarSeries extends TimeChartSeries {
     super.color,
     super.interval,
     super.alignment,
+    super.minSpread = 1,
     super.valueTitle = 'value',
     this.hoverColor,
     this.strokeColor = '#0007',
@@ -196,6 +197,8 @@ class BarSeries extends TimeChartSeries {
     final maxWidth = transform!.apply(interval!.inMilliseconds, 0).x - transform!.apply(0, 0).x;
     final width = (barWidth ?? (0.6 / numBars)) * maxWidth;
 
+    var zeroY = transform!.apply(0, 0).y;
+
     for (var point in transformedPoints(chart)) {
       ctx.fillStyle = point.isActive ? (hoverColor ?? color).toJS : color.toJS;
 
@@ -205,8 +208,13 @@ class BarSeries extends TimeChartSeries {
       if (chart.chartHeight + chart._topMargin > point.y) {
         if (ctx.hasProperty('roundRect'.toJS).toDart) {
           ctx.beginPath();
-          ctx.roundRect(point.x + offset, point.y, w, chart.chartHeight + chart._topMargin - point.y,
-              <JSAny?>[borderRadius.toJS, borderRadius.toJS, 0.toJS, 0.toJS].toJS);
+          ctx.roundRect(
+              point.x + offset,
+              point.y,
+              w,
+              (zeroY - point.y),
+              <JSAny?>[borderRadius.toJS, borderRadius.toJS, 0.toJS, 0.toJS].toJS
+          );
           ctx.fill();
           if (strokeWidth > 0) {
             ctx.stroke();
@@ -673,7 +681,7 @@ class SwiftTimeChart extends SwiftChart {
     }
 
     int barIdx = 0;
-    interval ??= minDiff != null ? Duration(milliseconds: minDiff) : null;
+    interval ??= minDiff != null ? Duration(milliseconds: minDiff) : Duration(milliseconds: 100);
 
     for (var i = 0; i < series.length; i++) {
       series[i].interval ??= interval;
@@ -682,11 +690,15 @@ class SwiftTimeChart extends SwiftChart {
         (series[i] as BarSeries).barIndex = barIdx++;
       }
     }
-
-    if (numBars > 0) {
+    if ((numBars > 0)) {
       //make sure bar charts will fit nicely in the chart
       minTime = (minTime! - (interval!.inMilliseconds * 0.4)).round();
       maxTime = (maxTime! + (interval!.inMilliseconds * 0.4)).round();
+    }
+
+    if (maxTime == minTime) {
+      minTime = minTime! - 100;
+      maxTime = maxTime! + 100;
     }
 
     if (maxTime == null) {
@@ -694,10 +706,6 @@ class SwiftTimeChart extends SwiftChart {
       return;
     }
 
-    if (maxTime == minTime) {
-      minTime = minTime! - 100;
-      maxTime = maxTime! + 100;
-    }
 
     _leftMargin = _rightMargin = margin;
 
